@@ -53,3 +53,6 @@ All prototypes are standalone and can be launched from the repo root index page.
 - Issue #45 `Wave Signal Surf` -> `tempo/gameplay/issue-045-wave-signal-surf/`
 - Issue #46 `Chorus Circuit` -> `tempo/gameplay/issue-046-chorus-circuit/`
 - Issue #47 `Bassline Breaker` -> `tempo/gameplay/issue-047-bassline-breaker/`
+- Issue #48 `Lore Frequency` -> `tempo/gameplay/issue-048-lore-frequency/`
+- Issue #49 `Sync Mirage` -> `tempo/gameplay/issue-049-sync-mirage/`
+- Issue #50 `Last Chorus Escape` -> `tempo/gameplay/issue-050-last-chorus-escape/`

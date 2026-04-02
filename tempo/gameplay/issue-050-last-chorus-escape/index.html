@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 50 | Last Chorus Escape</title>
+    <style>
+      :root {
+        --bg: #081016;
+        --panel: rgba(8, 16, 22, 0.84);
+        --line: rgba(132, 255, 214, 0.16);
+        --text: #effef7;
+        --muted: #b0d2c8;
+      }
+      * { box-sizing: border-box; }
+      body { margin:0; color:var(--text); font-family:"Avenir Next","Segoe UI",sans-serif; background:radial-gradient(circle at top left, rgba(132,255,214,.12), transparent 24%), linear-gradient(180deg,#03070a,#081218 58%,#030609 100%); }
+      main { width:min(1320px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.55fr 1fr; gap:18px; }
+      .panel { padding:18px; border-radius:24px; border:1px solid var(--line); background:var(--panel); box-shadow:0 18px 60px rgba(0,0,0,.24); }
+      canvas { width:100%; height:auto; aspect-ratio:960 / 560; display:block; border-radius:22px; background:linear-gradient(180deg, rgba(6,12,18,.96), rgba(3,8,11,.98)); }
+      .hud { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:12px; }
+      .stat { padding:12px; border-radius:16px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:26px; }
+      .small { color:var(--muted); line-height:1.65; }
+      .meter { height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); margin-top:8px; }
+      .meter span { display:block; height:100%; width:100%; background:linear-gradient(90deg,#8cffc4,#97deff,#ffd784); }
+      button { width:100%; margin-top:10px; border:0; border-radius:16px; padding:13px 14px; font:inherit; font-weight:700; cursor:pointer; color:#06111d; background:linear-gradient(135deg,#baffdf,#ecfff5); }
+      a { color:#a9ffe0; }
+      @media (max-width:960px) { .grid { grid-template-columns:1fr; } .hud { grid-template-columns:repeat(2,1fr); } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <canvas id="escape" width="960" height="560"></canvas>
+          <div class="hud">
+            <div class="stat">Score<strong id="score">0</strong></div>
+            <div class="stat">Meters<strong id="meters">0</strong></div>
+            <div class="stat">Near Miss<strong id="near">0</strong></div>
+            <div class="stat">Hits<strong id="hits">0</strong></div>
+            <div class="stat">Integrity<strong id="integrity">100</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <p><a href="../../index.html">Back to tempo</a></p>
+          <h1 style="margin:0 0 10px;">Last Chorus Escape</h1>
+          <p class="small">The theater is collapsing around the last song. Hold `A` or `D` to weave left and right, dodge falling chorus shards, and survive until the final refrain. Near misses score high, direct hits damage the stage integrity.</p>
+          <p class="small" id="section">Load escape score.</p>
+          <div class="small">Stage integrity</div>
+          <div class="meter"><span id="integrityMeter"></span></div>
+          <p class="small" id="ending"></p>
+          <button id="start">Start Escape</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const canvas = document.getElementById("escape");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const metersEl = document.getElementById("meters");
+      const nearEl = document.getElementById("near");
+      const hitsEl = document.getElementById("hits");
+      const integrityEl = document.getElementById("integrity");
+      const integrityMeter = document.getElementById("integrityMeter");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+      const audio = new Audio("/tempo-audio/tempo/last-chorus-escape.wav");
+      audio.crossOrigin = "anonymous";
+
+      const state = { analysis:null, hazards:[], particles:[], score:0, meters:0, near:0, hits:0, integrity:100, live:false, playerX:480, keys:new Set() };
+      function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+      function sync(){scoreEl.textContent=state.score;metersEl.textContent=Math.round(state.meters);nearEl.textContent=state.near;hitsEl.textContent=state.hits;integrityEl.textContent=Math.round(state.integrity);integrityMeter.style.width=`${state.integrity}%`;}
+      function sectionForTime(time){if(!state.analysis)return null;return state.analysis.sections.find((s)=>time>=s.start&&time<s.end)||state.analysis.sections.at(-1);}
+      function burst(x,y,color){for(let i=0;i<12;i+=1){const a=(Math.PI*2*i)/12;state.particles.push({x,y,vx:Math.cos(a)*(1.4+Math.random()*2.2),vy:Math.sin(a)*(1.4+Math.random()*2.2),life:1,color});}}
+      function createHazards(){const beats=state.analysis.beats.filter((_,i)=>i%2===0);state.hazards=beats.map((beat,index)=>({beat,x:160 + ((index*97)%640),size:index%4===0?52:36,hit:false,passed:false}));}
+      async function init(){if(state.analysis)return;const response=await fetch("../../analysis/last-chorus-escape-analysis.json");state.analysis=await response.json();createHazards();sectionEl.textContent=`Estimated BPM ${state.analysis.estimatedBpm}. ${state.hazards.length} collapse beats loaded.`;}
+      function finish(){state.live=false;if(state.integrity<=0)endingEl.textContent="Result: the theater came down before the song made it out.";else if(state.meters>=28)endingEl.textContent="Result: premium escape. You carried the last chorus all the way through the collapse.";else endingEl.textContent="Result: partial escape. The song survives, but the theater takes most of the damage.";}
+      function resetRun(){state.score=0;state.meters=0;state.near=0;state.hits=0;state.integrity=100;state.playerX=480;state.particles=[];endingEl.textContent="";createHazards();sync();}
+      document.getElementById("start").onclick=async()=>{await init();resetRun();audio.currentTime=0;state.live=true;await audio.play().catch(()=>{state.live=false;sectionEl.textContent="Playback blocked. Click start again.";});};
+      window.addEventListener("keydown",(e)=>{if(["KeyA","KeyD","ArrowLeft","ArrowRight"].includes(e.code))state.keys.add(e.code);});
+      window.addEventListener("keyup",(e)=>{state.keys.delete(e.code);});
+      audio.addEventListener("ended",finish);
+      function update(now){
+        if(state.keys.has("KeyA")||state.keys.has("ArrowLeft")) state.playerX -= 8;
+        if(state.keys.has("KeyD")||state.keys.has("ArrowRight")) state.playerX += 8;
+        state.playerX = clamp(state.playerX, 120, 840);
+        const section=sectionForTime(now); if(section) sectionEl.textContent=`${section.label.toUpperCase()} escape | weave through falling chorus shards | ${now.toFixed(2)}s`;
+        state.hazards.forEach((hazard)=>{
+          const delta=hazard.beat-now;
+          if(hazard.hit||hazard.passed||delta>3.2||delta<-0.4)return;
+          const y=80 + (1 - clamp(delta/3.2,0,1))*360;
+          if(Math.abs(y-450)<28){
+            const dist=Math.abs(hazard.x-state.playerX);
+            if(dist < hazard.size*0.7){hazard.hit=true;state.hits+=1;state.integrity=clamp(state.integrity-16,0,100);state.score=Math.max(0,state.score-40);burst(hazard.x,450,"#ff6c8a");}
+            else if(dist < hazard.size*1.2){hazard.passed=true;state.near+=1;state.score+=80;state.meters+=1.2;burst(hazard.x,450,"#ffd784");}
+            else {hazard.passed=true;state.score+=40;state.meters+=1.4;}
+            sync();
+          }
+        });
+        if(state.integrity<=0) finish();
+      }
+      function draw(now){
+        ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#071015";ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle="rgba(255,255,255,.03)"; for(let i=0;i<8;i+=1) ctx.fillRect(100 + i*95, 60, 48, 430);
+        ctx.fillStyle="#8cffc4"; ctx.fillRect(state.playerX-42, 458, 84, 20); ctx.fillStyle="#d9fff0"; ctx.fillRect(state.playerX-18, 420, 36, 40);
+        state.hazards.forEach((hazard)=>{const delta=hazard.beat-now;if(hazard.hit||hazard.passed||delta>3.2||delta<-0.4)return;const y=80 + (1 - clamp(delta/3.2,0,1))*360;ctx.fillStyle=delta<0.9?"#ffd784":"#97deff";ctx.beginPath();ctx.moveTo(hazard.x, y - hazard.size);ctx.lineTo(hazard.x - hazard.size*0.65, y + hazard.size);ctx.lineTo(hazard.x + hazard.size*0.65, y + hazard.size);ctx.closePath();ctx.fill();});
+        state.particles = state.particles.filter((p)=>p.life>0.03);
+        state.particles.forEach((p)=>{p.x+=p.vx;p.y+=p.vy;p.vx*=0.97;p.vy*=0.97;p.life*=0.93;ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,4+(1-p.life)*2,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
+      }
+      function animate(){requestAnimationFrame(animate);const now=state.live?audio.currentTime:0;if(state.live)update(now);draw(now);}
+      sync(); animate();
+    </script>
+  </body>
+  </html>

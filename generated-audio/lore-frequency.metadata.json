@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-04-02T17:16:56.966Z",
+  "slug": "lore-frequency",
+  "model": "fal-ai/lyria2",
+  "prompt": "Create a 34 second mysterious melodic electronic track for a narrative rhythm game called Lore Frequency. Start with cryptic pulses, develop into emotional harmonic motion, and reveal a luminous story drop. Clear beat anchors, cinematic but playable.",
+  "audioUrl": "https://v3b.fal.media/files/b/0a94aa0d/iaq4tlW2iBPvgyVZY7mSU_output.wav",
+  "result": {
+    "data": {
+      "audio": {
+        "url": "https://v3b.fal.media/files/b/0a94aa0d/iaq4tlW2iBPvgyVZY7mSU_output.wav",
+        "content_type": "audio/wav",
+        "file_name": "output.wav",
+        "file_size": 6291544
+      }
+    },
+    "requestId": "019d4f31-ff9d-71c0-b41e-b9790f7ee1e5"
+  }
+}

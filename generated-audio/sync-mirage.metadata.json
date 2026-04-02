@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-04-02T17:16:39.410Z",
+  "slug": "sync-mirage",
+  "model": "fal-ai/lyria2",
+  "prompt": "Create a 34 second illusion-themed synth rhythm track for a mirror reflex game called Sync Mirage. The intro should feel deceptive, the lift should alternate left-right energy, and the drop should become a glossy high-speed mirage. Strong stereo-feeling rhythm cues, no vocals.",
+  "audioUrl": "https://v3b.fal.media/files/b/0a94aa0b/GdfVnSJMN0B73DHAIxIFs_output.wav",
+  "result": {
+    "data": {
+      "audio": {
+        "url": "https://v3b.fal.media/files/b/0a94aa0b/GdfVnSJMN0B73DHAIxIFs_output.wav",
+        "content_type": "audio/wav",
+        "file_name": "output.wav",
+        "file_size": 6291544
+      }
+    },
+    "requestId": "019d4f31-ffa1-7042-aafc-e9a4339facb5"
+  }
+}

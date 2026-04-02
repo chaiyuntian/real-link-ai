@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 49 | Sync Mirage</title>
+    <style>
+      :root {
+        --bg: #090711;
+        --panel: rgba(16, 10, 24, 0.84);
+        --line: rgba(182, 158, 255, 0.18);
+        --text: #f4efff;
+        --muted: #c5b9da;
+      }
+      * { box-sizing: border-box; }
+      body { margin:0; color:var(--text); font-family:"Avenir Next","Segoe UI",sans-serif; background:radial-gradient(circle at top left, rgba(183,156,255,.16), transparent 24%), linear-gradient(180deg,#05040a,#0d0914 58%,#040309 100%); }
+      main { width:min(1320px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.55fr 1fr; gap:18px; }
+      .panel { padding:18px; border-radius:24px; border:1px solid var(--line); background:var(--panel); box-shadow:0 18px 60px rgba(0,0,0,.24); }
+      canvas { width:100%; height:auto; aspect-ratio:960 / 560; display:block; border-radius:22px; background:linear-gradient(180deg, rgba(13,9,21,.96), rgba(7,4,12,.98)); }
+      .hud { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:12px; }
+      .stat { padding:12px; border-radius:16px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:26px; }
+      .small { color:var(--muted); line-height:1.65; }
+      .meter { height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); margin-top:8px; }
+      .meter span { display:block; height:100%; width:100%; background:linear-gradient(90deg,#b79cff,#97deff,#ffcf84); }
+      button { width:100%; margin-top:10px; border:0; border-radius:16px; padding:13px 14px; font:inherit; font-weight:700; cursor:pointer; color:#140d1f; background:linear-gradient(135deg,#d6c4ff,#f7e9ff); }
+      a { color:#d6c4ff; }
+      @media (max-width:960px) { .grid { grid-template-columns:1fr; } .hud { grid-template-columns:repeat(2,1fr); } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <canvas id="mirror" width="960" height="560"></canvas>
+          <div class="hud">
+            <div class="stat">Score<strong id="score">0</strong></div>
+            <div class="stat">True Hits<strong id="hits">0</strong></div>
+            <div class="stat">False Hits<strong id="falseHits">0</strong></div>
+            <div class="stat">Combo<strong id="combo">0</strong></div>
+            <div class="stat">Stability<strong id="stabilityText">100</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <p><a href="../../index.html">Back to tempo</a></p>
+          <h1 style="margin:0 0 10px;">Sync Mirage</h1>
+          <p class="small">A hall of mirrors throws fake beats at you. Press `ArrowLeft` if the left shard is real, `ArrowRight` if the right shard is real, and do nothing if both are mirages. The trick is surviving the mirrored drop.</p>
+          <p class="small" id="section">Load mirror score.</p>
+          <div class="small">Hall stability</div>
+          <div class="meter"><span id="stability"></span></div>
+          <p class="small" id="ending"></p>
+          <button id="start">Start Hall</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const canvas = document.getElementById("mirror");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const hitsEl = document.getElementById("hits");
+      const falseHitsEl = document.getElementById("falseHits");
+      const comboEl = document.getElementById("combo");
+      const stabilityTextEl = document.getElementById("stabilityText");
+      const stabilityEl = document.getElementById("stability");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+      const audio = new Audio("/tempo-audio/tempo/sync-mirage.wav");
+      audio.crossOrigin = "anonymous";
+
+      const state = { analysis:null, events:[], score:0, hits:0, falseHits:0, combo:0, stability:100, live:false, particles:[] };
+      function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+      function sync(){scoreEl.textContent=state.score;hitsEl.textContent=state.hits;falseHitsEl.textContent=state.falseHits;comboEl.textContent=state.combo;stabilityTextEl.textContent=Math.round(state.stability);stabilityEl.style.width=`${state.stability}%`;}
+      function sectionForTime(time){if(!state.analysis)return null;return state.analysis.sections.find((s)=>time>=s.start&&time<s.end)||state.analysis.sections.at(-1);}
+      function burst(x,y,color){for(let i=0;i<10;i+=1){const a=(Math.PI*2*i)/10;state.particles.push({x,y,vx:Math.cos(a)*(1.2+Math.random()*2),vy:Math.sin(a)*(1.2+Math.random()*2),life:1,color});}}
+      function createEvents(){const beats=state.analysis.beats.filter((_,i)=>i%2===0);state.events=beats.map((beat,index)=>{const mod=index%3;return{beat,truth:mod===0?"left":mod===1?"right":"none",judged:false};});}
+      async function init(){if(state.analysis)return;const response=await fetch("../../analysis/sync-mirage-analysis.json");state.analysis=await response.json();createEvents();sectionEl.textContent=`Estimated BPM ${state.analysis.estimatedBpm}. Mirror hall initialized with ${state.events.length} truth checks.`;}
+      function finish(){state.live=false;if(state.stability<=0)endingEl.textContent="Result: the hall fractures under false certainty.";else if(state.hits>=14)endingEl.textContent="Result: premium read. You consistently found the true shard through the mirage.";else endingEl.textContent="Result: partial read. Enough truth survived to exit the hall, but not enough to master it.";}
+      function resetRun(){state.score=0;state.hits=0;state.falseHits=0;state.combo=0;state.stability=100;state.particles=[];endingEl.textContent="";createEvents();sync();}
+      document.getElementById("start").onclick=async()=>{await init();resetRun();audio.currentTime=0;state.live=true;await audio.play().catch(()=>{state.live=false;sectionEl.textContent="Playback blocked. Click start again.";});};
+      window.addEventListener("keydown",(event)=>{if(!state.live)return;const now=audio.currentTime;const current=state.events.find((item)=>!item.judged&&Math.abs(item.beat-now)<=0.18);if(!current)return;let choice=null;if(event.code==="ArrowLeft")choice="left";if(event.code==="ArrowRight")choice="right";if(!choice)return;current.judged=true;if(choice===current.truth){state.hits+=1;state.combo+=1;state.score+=current.truth==="none"?60:120;state.stability=clamp(state.stability+2.5,0,100);burst(choice==="left"?270:690,360,"#b79cff");}else{state.falseHits+=1;state.combo=0;state.stability=clamp(state.stability-14,0,100);burst(choice==="left"?270:690,360,"#ff6c8a");}sync();});
+      audio.addEventListener("ended",finish);
+      function draw(now){
+        ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#0a0712";ctx.fillRect(0,0,canvas.width,canvas.height);
+        const section=sectionForTime(now); if(section) sectionEl.textContent=`${section.label.toUpperCase()} mirror read | left/right if real, hold if false | ${now.toFixed(2)}s`;
+        ctx.fillStyle="rgba(255,255,255,.03)"; ctx.fillRect(120,70,300,400); ctx.fillRect(540,70,300,400);
+        ctx.strokeStyle="rgba(183,156,255,.18)"; ctx.lineWidth=3; ctx.strokeRect(120,70,300,400); ctx.strokeRect(540,70,300,400);
+        ctx.beginPath(); ctx.moveTo(480,60); ctx.lineTo(480,490); ctx.strokeStyle="rgba(255,255,255,.06)"; ctx.lineWidth=2; ctx.stroke();
+        state.events.forEach((evt)=>{
+          const delta=evt.beat-now;
+          if(!evt.judged && delta < -0.2){evt.judged=true;if(evt.truth!=="none"){state.falseHits+=1;state.combo=0;state.stability=clamp(state.stability-10,0,100);sync();}}
+          if(delta < -0.8 || delta > 3.4) return;
+          const y=90 + (1 - clamp(delta/3.4,0,1))*280;
+          const leftReal = evt.truth==="left";
+          const rightReal = evt.truth==="right";
+          ctx.globalAlpha = evt.truth==="none" ? 0.42 : 0.95;
+          ctx.fillStyle = leftReal ? "#97deff" : "#b79cff";
+          ctx.beginPath(); ctx.arc(270,y,30,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle = rightReal ? "#97deff" : "#b79cff";
+          ctx.beginPath(); ctx.arc(690,y,30,0,Math.PI*2); ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+        state.particles = state.particles.filter((p)=>p.life>0.03);
+        state.particles.forEach((p)=>{p.x+=p.vx;p.y+=p.vy;p.vx*=0.97;p.vy*=0.97;p.life*=0.93;ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,4+(1-p.life)*2,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
+      }
+      function animate(){requestAnimationFrame(animate);draw(state.live?audio.currentTime:0);}
+      sync(); animate();
+    </script>
+  </body>
+  </html>

@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-04-02T17:16:34.467Z",
+  "slug": "last-chorus-escape",
+  "model": "fal-ai/lyria2",
+  "prompt": "Create a 34 second finale-ready electronic escape track for a browser rhythm game called Last Chorus Escape. Begin with urgency, escalate through a tightening middle section, and explode into a big emotional final chorus drop with clear beat markers for evasive play.",
+  "audioUrl": "https://v3b.fal.media/files/b/0a94aa0b/dZfwh88xXoiy9TiFDlKnq_output.wav",
+  "result": {
+    "data": {
+      "audio": {
+        "url": "https://v3b.fal.media/files/b/0a94aa0b/dZfwh88xXoiy9TiFDlKnq_output.wav",
+        "content_type": "audio/wav",
+        "file_name": "output.wav",
+        "file_size": 6291544
+      }
+    },
+    "requestId": "019d4f31-ff9d-71e0-b65b-16dcecab7099"
+  }
+}

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 48 | Lore Frequency</title>
+    <style>
+      :root {
+        --bg: #071019;
+        --panel: rgba(8, 16, 26, 0.84);
+        --line: rgba(133, 214, 255, 0.18);
+        --text: #eef8ff;
+        --muted: #adc7d9;
+        --accent: #97deff;
+        --accent2: #b79cff;
+        --warm: #ffcf84;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(151,222,255,.14), transparent 24%),
+          radial-gradient(circle at top right, rgba(183,156,255,.12), transparent 26%),
+          linear-gradient(180deg, #030711, #08131f 58%, #04060b 100%);
+      }
+      main { width:min(1320px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.55fr 1fr; gap:18px; }
+      .panel { padding:18px; border-radius:24px; border:1px solid var(--line); background:var(--panel); box-shadow:0 18px 60px rgba(0,0,0,.24); }
+      canvas { width:100%; height:auto; aspect-ratio:960 / 560; display:block; border-radius:22px; background:linear-gradient(180deg, rgba(7,13,22,.96), rgba(4,7,14,.98)); }
+      .hud { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:12px; }
+      .stat { padding:12px; border-radius:16px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:26px; }
+      .small { color:var(--muted); line-height:1.65; }
+      .meter { height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); margin-top:8px; }
+      .meter span { display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--accent2),var(--accent),var(--warm)); }
+      button { width:100%; margin-top:10px; border:0; border-radius:16px; padding:13px 14px; font:inherit; font-weight:700; cursor:pointer; color:#06111d; background:linear-gradient(135deg,#b9d7ff,#f4e1ff); }
+      a { color:#9cdfff; }
+      @media (max-width:960px) { .grid { grid-template-columns:1fr; } .hud { grid-template-columns:repeat(2,1fr); } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <canvas id="archive" width="960" height="560"></canvas>
+          <div class="hud">
+            <div class="stat">Score<strong id="score">0</strong></div>
+            <div class="stat">Decoded<strong id="decoded">0</strong></div>
+            <div class="stat">Errors<strong id="errors">0</strong></div>
+            <div class="stat">Combo<strong id="combo">0</strong></div>
+            <div class="stat">Clarity<strong id="clarity">100</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <p><a href="../../index.html">Back to tempo</a></p>
+          <h1 style="margin:0 0 10px;">Lore Frequency</h1>
+          <p class="small">An archive buried under static only speaks through rhythm. Use `1`, `2`, `3` to lock the correct memory frequency when a fragment reaches the decoder ring. Each phase reveals a different part of the story.</p>
+          <p class="small" id="section">Load archive score.</p>
+          <div class="small">Archive clarity</div>
+          <div class="meter"><span id="clarityMeter"></span></div>
+          <p class="small" id="story"></p>
+          <p class="small" id="ending"></p>
+          <button id="start">Start Decode</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const canvas = document.getElementById("archive");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const decodedEl = document.getElementById("decoded");
+      const errorsEl = document.getElementById("errors");
+      const comboEl = document.getElementById("combo");
+      const clarityEl = document.getElementById("clarity");
+      const clarityMeter = document.getElementById("clarityMeter");
+      const sectionEl = document.getElementById("section");
+      const storyEl = document.getElementById("story");
+      const endingEl = document.getElementById("ending");
+
+      const audio = new Audio("/tempo-audio/tempo/lore-frequency.wav");
+      audio.crossOrigin = "anonymous";
+      const laneKeys = ["Digit1", "Digit2", "Digit3"];
+      const laneXs = [230, 480, 730];
+      const laneColors = ["#97deff", "#b79cff", "#ffcf84"];
+      const storyMap = {
+        intro: "Archive fragment: a city sealed its songs underground to survive a silence event.",
+        lift: "Archive fragment: one archivist kept transmitting memory patterns after the shutdown.",
+        drop: "Archive fragment: the city can wake again if the chorus is rebuilt from these pulses."
+      };
+
+      const state = {
+        analysis: null,
+        fragments: [],
+        particles: [],
+        score: 0,
+        decoded: 0,
+        errors: 0,
+        combo: 0,
+        clarity: 100,
+        live: false
+      };
+
+      function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+      function sync() {
+        scoreEl.textContent = state.score;
+        decodedEl.textContent = state.decoded;
+        errorsEl.textContent = state.errors;
+        comboEl.textContent = state.combo;
+        clarityEl.textContent = Math.round(state.clarity);
+        clarityMeter.style.width = `${state.clarity}%`;
+      }
+      function sectionForTime(time) {
+        if (!state.analysis) return null;
+        return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
+      }
+      function burst(x, y, color) {
+        for (let i = 0; i < 12; i += 1) {
+          const angle = (Math.PI * 2 * i) / 12;
+          state.particles.push({ x, y, vx: Math.cos(angle) * (1.2 + Math.random() * 2.2), vy: Math.sin(angle) * (1.2 + Math.random() * 2.2), life: 1, color });
+        }
+      }
+      function createFragments() {
+        const beats = state.analysis.beats.filter((_, index) => index % 2 === 0);
+        state.fragments = beats.map((beat, index) => ({
+          beat,
+          lane: index % 3,
+          hit: false,
+          missed: false
+        }));
+      }
+      async function init() {
+        if (state.analysis) return;
+        const response = await fetch("../../analysis/lore-frequency-analysis.json");
+        state.analysis = await response.json();
+        createFragments();
+        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. ${state.fragments.length} archive fragments queued.`;
+      }
+      function finish() {
+        state.live = false;
+        if (state.clarity <= 0) endingEl.textContent = "Result: the archive falls back into static before the truth can cohere.";
+        else if (state.decoded >= 16) endingEl.textContent = "Result: full decode. The buried history becomes a playable signal again.";
+        else endingEl.textContent = "Result: partial decode. You recovered enough to hear the city, not enough to restore it.";
+      }
+      function resetRun() {
+        state.score = 0; state.decoded = 0; state.errors = 0; state.combo = 0; state.clarity = 100; state.particles = []; endingEl.textContent = ""; createFragments(); sync();
+      }
+      document.getElementById("start").onclick = async () => {
+        await init();
+        resetRun();
+        audio.currentTime = 0;
+        state.live = true;
+        await audio.play().catch(() => { state.live = false; sectionEl.textContent = "Playback blocked. Click start again."; });
+      };
+      window.addEventListener("keydown", (event) => {
+        if (!state.live) return;
+        const lane = laneKeys.indexOf(event.code);
+        if (lane === -1) return;
+        const now = audio.currentTime;
+        const fragment = state.fragments.find((item) => !item.hit && !item.missed && item.lane === lane);
+        if (!fragment) return;
+        const delta = Math.abs(fragment.beat - now);
+        if (delta <= 0.18) {
+          fragment.hit = true;
+          state.decoded += 1;
+          state.combo += 1;
+          state.score += delta <= 0.08 ? 160 : 100;
+          state.clarity = clamp(state.clarity + 2.5, 0, 100);
+          burst(laneXs[lane], 416, laneColors[lane]);
+        } else {
+          state.combo = 0;
+          state.errors += 1;
+          state.clarity = clamp(state.clarity - 11, 0, 100);
+        }
+        sync();
+      });
+      audio.addEventListener("ended", finish);
+      function draw(now) {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "#07101a";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        const section = sectionForTime(now);
+        if (section) {
+          sectionEl.textContent = `${section.label.toUpperCase()} decode | press 1/2/3 on the matching memory frequency | ${now.toFixed(2)}s`;
+          storyEl.textContent = storyMap[section.label];
+        }
+        ctx.strokeStyle = "rgba(151,222,255,.08)";
+        for (let i = 0; i < 3; i += 1) {
+          ctx.strokeRect(140 + i * 250, 70, 180, 370);
+          ctx.fillStyle = "rgba(255,255,255,.03)";
+          ctx.fillRect(140 + i * 250, 70, 180, 370);
+          ctx.fillStyle = laneColors[i];
+          ctx.font = "700 22px Avenir Next";
+          ctx.fillText(String(i + 1), laneXs[i] - 6, 474);
+        }
+        ctx.beginPath();
+        ctx.arc(480, 416, 84, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(151,222,255,.18)";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        state.fragments.forEach((fragment) => {
+          const delta = fragment.beat - now;
+          if (!fragment.hit && !fragment.missed && delta < -0.2) {
+            fragment.missed = true;
+            state.combo = 0;
+            state.errors += 1;
+            state.clarity = clamp(state.clarity - 9, 0, 100);
+            sync();
+          }
+          if (delta < -0.8 || delta > 3.5 || fragment.hit) return;
+          const progress = 1 - clamp(delta / 3.5, 0, 1);
+          const y = 90 + progress * 300;
+          ctx.beginPath();
+          ctx.arc(laneXs[fragment.lane], y, 20 + Math.sin(now * 5 + fragment.lane) * 4, 0, Math.PI * 2);
+          ctx.fillStyle = laneColors[fragment.lane];
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(laneXs[fragment.lane], y, 42, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(255,255,255,.15)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+        state.particles = state.particles.filter((p) => p.life > 0.03);
+        state.particles.forEach((p) => {
+          p.x += p.vx; p.y += p.vy; p.vx *= 0.97; p.vy *= 0.97; p.life *= 0.93;
+          ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4 + (1 - p.life) * 2, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        });
+      }
+      function animate() { requestAnimationFrame(animate); draw(state.live ? audio.currentTime : 0); }
+      sync(); animate();
+    </script>
+  </body>
+  </html>
