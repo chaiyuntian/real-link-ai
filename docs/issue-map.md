@@ -37,7 +37,7 @@ All prototypes are standalone and can be launched from the repo root index page.
 
 ## Tempo Domain
 
-- Issue #32 `Signal Garden` -> planned
+- Issue #32 `Signal Garden` -> `tempo/gameplay/issue-032-signal-garden/`
 - Issue #33 `Drop Architect` -> planned
 - Issue #34 `Neon Pulse Corridor` -> `tempo/gameplay/issue-034-neon-pulse-corridor/`
 - Issue #35 `Lore Frequency` -> planned
@@ -48,3 +48,4 @@ All prototypes are standalone and can be launched from the repo root index page.
 - Issue #40 `Last Chorus Escape` -> planned
 - Issue #41 `Beat Bloom` -> planned
 - Issue #42 `Sync Mirage` -> planned
+- Issue #43 `Upload-to-Rhythm Templates` -> `tempo/tools/upload-rhythm-template/`

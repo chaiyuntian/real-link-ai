@@ -61,13 +61,13 @@
         background: rgba(255,255,255,.06);
       }
       textarea { min-height: 220px; resize: vertical; }
-      .stats { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:14px; }
+      .stats { display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-top:14px; }
       .stat { padding: 12px; border-radius: 14px; background: rgba(255,255,255,.04); }
       .stat strong { display:block; margin-top:4px; font-size:24px; }
       .small { color: var(--muted); line-height: 1.6; }
       .preview {
         position: relative;
-        height: 360px;
+        height: 380px;
         border-radius: 18px;
         overflow: hidden;
         background:
@@ -95,14 +95,42 @@
         background: linear-gradient(90deg, rgba(134,255,211,.4), rgba(151,222,255,1), rgba(255,178,111,.4));
         box-shadow: 0 0 18px rgba(151,222,255,.45);
       }
-      .note {
+      .note, .burst, .garden-seed {
         position:absolute;
+        transform: translate(-50%, -50%);
+      }
+      .note {
         width: 20%;
         height: 22px;
         border-radius: 999px;
         background: linear-gradient(90deg, #86ffd3, #97deff);
         box-shadow: 0 0 18px rgba(151,222,255,.35);
+      }
+      .burst {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #86ffd3 0%, #97deff 70%, rgba(151,222,255,.08) 100%);
+        box-shadow: 0 0 24px rgba(151,222,255,.35);
+      }
+      .garden-seed {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 3px solid #86ffd3;
+        box-shadow: 0 0 28px rgba(134,255,211,.22);
+      }
+      .story-card {
+        position:absolute;
+        left: 50%;
         transform: translateX(-50%);
+        width: min(80%, 420px);
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid rgba(151,222,255,.18);
+        background: rgba(6, 12, 20, 0.88);
+        color: var(--text);
+        text-align: center;
       }
       .timeline {
         position: relative;
@@ -161,6 +189,15 @@
                 <option value="lane">Lane Runner</option>
                 <option value="burst">Burst Gates</option>
                 <option value="story">Story Pulse</option>
+                <option value="garden">Signal Garden</option>
+              </select>
+            </div>
+            <div style="flex:1 1 180px">
+              <label for="difficulty" class="small">Difficulty</label>
+              <select id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="normal" selected>Normal</option>
+                <option value="hard">Hard</option>
               </select>
             </div>
           </div>
@@ -176,6 +213,7 @@
             <div class="stat">BPM<strong id="bpm">--</strong></div>
             <div class="stat">Beats<strong id="beats">--</strong></div>
             <div class="stat">Sections<strong id="sections">--</strong></div>
+            <div class="stat">Notes<strong id="notes">--</strong></div>
           </div>
 
           <div class="timeline" id="timeline"></div>
@@ -198,8 +236,9 @@
             <span class="pill">Lane Runner: standard 4-lane hits</span>
             <span class="pill">Burst Gates: cluster-based burst timing</span>
             <span class="pill">Story Pulse: section beats become narrative prompts</span>
+            <span class="pill">Signal Garden: blooms grow out of clustered beat pockets</span>
           </div>
-          <p class="small">Exported JSON contains beat times, section estimates, energy frames, and template-specific note placements.</p>
+          <p class="small">Exported JSON contains beat times, section estimates, difficulty settings, and template-specific note placements.</p>
           <textarea id="output" spellcheck="false"></textarea>
         </aside>
       </div>
@@ -207,6 +246,7 @@
     <script>
       const fileEl = document.getElementById("audioFile");
       const templateEl = document.getElementById("template");
+      const difficultyEl = document.getElementById("difficulty");
       const analyzeButton = document.getElementById("analyze");
       const startButton = document.getElementById("start");
       const exportButton = document.getElementById("export");
@@ -219,18 +259,20 @@
       const bpmEl = document.getElementById("bpm");
       const beatsEl = document.getElementById("beats");
       const sectionsEl = document.getElementById("sections");
+      const notesEl = document.getElementById("notes");
 
       const laneCenters = [12, 36, 60, 84];
+      const laneKeys = ["KeyD", "KeyF", "KeyJ", "KeyK"];
       const state = {
         analysis: null,
         templateData: null,
         objectUrl: null,
         audio: null,
         live: false,
-        combo: 0,
         score: 0,
+        combo: 0,
         misses: 0,
-        activeLanes: [false, false, false, false]
+        highestCombo: 0
       };
 
       function movingAverage(values, window) {
@@ -291,9 +333,7 @@
           }
           let flux = 0;
           if (previousSpectrum) {
-            for (let i = 0; i < spectrum.length; i += 1) {
-              flux += Math.max(0, spectrum[i] - previousSpectrum[i]);
-            }
+            for (let i = 0; i < spectrum.length; i += 1) flux += Math.max(0, spectrum[i] - previousSpectrum[i]);
           }
           previousSpectrum = spectrum;
           energies.push(rms);
@@ -342,20 +382,32 @@
         };
       }
 
-      function instantiateTemplate(analysis, template) {
-        const notes = analysis.beats.map((beat, index) => ({
+      function instantiateTemplate(analysis, template, difficulty) {
+        const filterEvery = difficulty === "easy" ? 2 : 1;
+        const strikeWindow = difficulty === "easy" ? 0.24 : difficulty === "hard" ? 0.14 : 0.18;
+        const sourceBeats = analysis.beats.filter((_, index) => {
+          if (template === "story") return index % (difficulty === "hard" ? 2 : 3) === 0;
+          if (template === "burst") return index % (difficulty === "easy" ? 3 : 2) === 0;
+          if (template === "garden") return index % (difficulty === "hard" ? 1 : 2) === 0;
+          return index % filterEvery === 0;
+        });
+
+        const notes = sourceBeats.map((beat, index) => ({
           beat,
-          lane: template === "burst" ? (Math.floor(index / 2) % 4) : index % 4,
+          lane: template === "burst" ? Math.floor(index / 2) % 4 : index % 4,
           prompt:
             template === "story"
               ? `${analysis.sections.find((section) => beat >= section.start && beat < section.end)?.label || "phase"} cue`
-              : null
+              : template === "garden"
+                ? `bloom seed ${index + 1}`
+                : null
         }));
 
         return {
           template,
+          difficulty,
           notes,
-          strikeWindow: template === "burst" ? 0.16 : 0.18
+          strikeWindow
         };
       }
 
@@ -377,14 +429,46 @@
         });
       }
 
+      function clearPreview() {
+        Array.from(previewEl.querySelectorAll(".note,.burst,.garden-seed,.story-card")).forEach((node) => node.remove());
+      }
+
       function renderPreview(currentTime = 0) {
-        Array.from(previewEl.querySelectorAll(".note")).forEach((node) => node.remove());
+        clearPreview();
         if (!state.templateData || !state.analysis) return;
-        const height = 310;
-        state.templateData.notes.forEach((note) => {
+        const height = 330;
+        state.templateData.notes.forEach((note, index) => {
           const delta = note.beat - currentTime;
-          if (delta < -0.5 || delta > 5) return;
+          if (delta < -0.6 || delta > 5) return;
           const top = height - ((delta / 5) * height);
+
+          if (state.templateData.template === "story") {
+            const card = document.createElement("div");
+            card.className = "story-card";
+            card.style.top = `${Math.max(18, top)}px`;
+            card.textContent = note.prompt;
+            previewEl.appendChild(card);
+            return;
+          }
+
+          if (state.templateData.template === "burst") {
+            const burst = document.createElement("div");
+            burst.className = "burst";
+            burst.style.left = `${laneCenters[note.lane]}%`;
+            burst.style.top = `${Math.max(18, top)}px`;
+            previewEl.appendChild(burst);
+            return;
+          }
+
+          if (state.templateData.template === "garden") {
+            const seed = document.createElement("div");
+            seed.className = "garden-seed";
+            seed.style.left = `${laneCenters[note.lane]}%`;
+            seed.style.top = `${Math.max(18, top - (index % 5) * 8)}px`;
+            previewEl.appendChild(seed);
+            return;
+          }
+
           const el = document.createElement("div");
           el.className = "note";
           el.style.left = `${laneCenters[note.lane]}%`;
@@ -394,11 +478,12 @@
       }
 
       function syncSummary() {
-        if (!state.analysis) return;
+        if (!state.analysis || !state.templateData) return;
         durationEl.textContent = `${state.analysis.duration}s`;
         bpmEl.textContent = state.analysis.estimatedBpm || "--";
         beatsEl.textContent = state.analysis.beatCount;
         sectionsEl.textContent = state.analysis.sections.length;
+        notesEl.textContent = state.templateData.notes.length;
         outputEl.value = JSON.stringify({
           analysis: state.analysis,
           template: state.templateData
@@ -407,9 +492,7 @@
 
       async function decodeSelectedFile() {
         const file = fileEl.files?.[0];
-        if (!file) {
-          throw new Error("Pick an audio file first.");
-        }
+        if (!file) throw new Error("Pick an audio file first.");
         const arrayBuffer = await file.arrayBuffer();
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const buffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
@@ -423,26 +506,29 @@
           const audioBuffer = await decodeSelectedFile();
           statusEl.textContent = "Analyzing waveform and novelty peaks...";
           state.analysis = analyzeBuffer(audioBuffer);
-          state.templateData = instantiateTemplate(state.analysis, templateEl.value);
+          state.templateData = instantiateTemplate(state.analysis, templateEl.value, difficultyEl.value);
           renderTimeline(state.analysis);
           renderPreview();
           syncSummary();
           startButton.disabled = false;
           exportButton.disabled = false;
           statusEl.textContent = "Analysis complete. Start the template or export the JSON.";
-          resultEl.textContent = `${templateEl.options[templateEl.selectedIndex].text} generated with ${state.analysis.beatCount} playable notes.`;
+          resultEl.textContent = `${templateEl.options[templateEl.selectedIndex].text} generated with ${state.templateData.notes.length} playable notes.`;
         } catch (error) {
           statusEl.textContent = error.message;
         }
       };
 
-      templateEl.onchange = () => {
+      function refreshTemplate() {
         if (!state.analysis) return;
-        state.templateData = instantiateTemplate(state.analysis, templateEl.value);
+        state.templateData = instantiateTemplate(state.analysis, templateEl.value, difficultyEl.value);
         renderPreview();
         syncSummary();
-        resultEl.textContent = `${templateEl.options[templateEl.selectedIndex].text} applied to current beat graph.`;
-      };
+        resultEl.textContent = `${difficultyEl.options[difficultyEl.selectedIndex].text} difficulty applied to ${templateEl.options[templateEl.selectedIndex].text}.`;
+      }
+
+      templateEl.onchange = refreshTemplate;
+      difficultyEl.onchange = refreshTemplate;
 
       function finishRun() {
         state.live = false;
@@ -450,7 +536,7 @@
           state.audio.pause();
           state.audio.currentTime = 0;
         }
-        resultEl.textContent = `Run complete. Score ${state.score}, combo peak ${state.combo}, misses ${state.misses}.`;
+        resultEl.textContent = `Run complete. Score ${state.score}, combo peak ${state.highestCombo}, misses ${state.misses}.`;
       }
 
       startButton.onclick = () => {
@@ -463,7 +549,12 @@
         state.score = 0;
         state.combo = 0;
         state.misses = 0;
+        state.highestCombo = 0;
         state.live = true;
+        state.templateData.notes.forEach((note) => {
+          note.hit = false;
+          note.missed = false;
+        });
         resultEl.textContent = "Template live. Use `D`, `F`, `J`, `K` to hit lanes 1-4.";
 
         state.audio.addEventListener("timeupdate", () => {
@@ -498,9 +589,8 @@
 
       window.addEventListener("keydown", (event) => {
         if (!state.live || !state.audio || !state.templateData) return;
-        const laneMap = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3 };
-        const lane = laneMap[event.code];
-        if (lane == null) return;
+        const lane = laneKeys.indexOf(event.code);
+        if (lane === -1) return;
         const now = state.audio.currentTime;
         const note = state.templateData.notes.find((item) => !item.hit && !item.missed && item.lane === lane);
         if (!note) return;
@@ -509,6 +599,7 @@
           note.hit = true;
           state.score += 1;
           state.combo += 1;
+          state.highestCombo = Math.max(state.highestCombo, state.combo);
           resultEl.textContent = note.prompt
             ? `Hit: ${note.prompt}`
             : `Hit lane ${lane + 1} at ${note.beat.toFixed(2)}s`;

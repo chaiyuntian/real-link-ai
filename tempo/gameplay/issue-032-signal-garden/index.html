@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 32 | Signal Garden</title>
+    <style>
+      :root {
+        --bg: #061018;
+        --panel: rgba(6, 13, 22, 0.88);
+        --line: rgba(140, 220, 255, 0.18);
+        --text: #eef8ff;
+        --muted: #acc7d9;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(136,255,211,.18), transparent 26%),
+          radial-gradient(circle at top right, rgba(151,222,255,.22), transparent 32%),
+          linear-gradient(180deg, #03060a, #08121b 60%, #04060b 100%);
+      }
+      main { width:min(1220px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.45fr 1fr; gap:18px; }
+      .panel {
+        padding:16px;
+        border-radius:20px;
+        border:1px solid var(--line);
+        background: var(--panel);
+      }
+      canvas {
+        width:100%;
+        height:520px;
+        display:block;
+        border-radius:18px;
+        background:
+          radial-gradient(circle at center, rgba(151,222,255,.12), transparent 26%),
+          linear-gradient(180deg, rgba(8,15,24,.95), rgba(5,8,14,.98));
+      }
+      .hud { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+      .stat { padding:12px; border-radius:14px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:26px; }
+      .small { color: var(--muted); line-height: 1.6; }
+      button {
+        width:100%;
+        margin-top:10px;
+        border:0;
+        border-radius:14px;
+        padding:12px 14px;
+        font:inherit;
+        font-weight:700;
+        cursor:pointer;
+        background:#97deff;
+        color:#06121d;
+      }
+      a { color:#97deff; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <canvas id="garden" width="900" height="520"></canvas>
+          <div class="hud">
+            <div class="stat">Score<strong id="score">0</strong></div>
+            <div class="stat">Combo<strong id="combo">0</strong></div>
+            <div class="stat">Misses<strong id="misses">0</strong></div>
+            <div class="stat">Bloomed<strong id="bloomed">0</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <p><a href="../../index.html">Back to tempo</a></p>
+          <h1>Signal Garden</h1>
+          <p class="small">Every beat becomes a bloom seed. Hit `D`, `F`, `J`, `K` when the seed ring closes to grow the garden instead of letting it wither.</p>
+          <p class="small" id="section">Load garden score.</p>
+          <p class="small" id="ending"></p>
+          <button id="start">Start Garden</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const canvas = document.getElementById("garden");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const missesEl = document.getElementById("misses");
+      const bloomedEl = document.getElementById("bloomed");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+
+      const laneKeys = ["KeyD", "KeyF", "KeyJ", "KeyK"];
+      const laneXs = [170, 355, 545, 730];
+      const laneColors = ["#86ffd3", "#97deff", "#ffb26f", "#b89cff"];
+      const audio = new Audio("https://videos-batch1.real-link.ai/tempo/tempo-batch1.wav");
+      audio.crossOrigin = "anonymous";
+
+      const state = {
+        analysis: null,
+        blooms: [],
+        score: 0,
+        combo: 0,
+        misses: 0,
+        bloomed: 0,
+        live: false
+      };
+
+      function syncStats() {
+        scoreEl.textContent = state.score;
+        comboEl.textContent = state.combo;
+        missesEl.textContent = state.misses;
+        bloomedEl.textContent = state.bloomed;
+      }
+
+      function sectionForTime(time) {
+        if (!state.analysis) return null;
+        return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
+      }
+
+      function createBlooms() {
+        const beats = state.analysis.beats.filter((_, index) => index % 2 === 0);
+        state.blooms = beats.map((beat, index) => ({
+          beat,
+          lane: index % 4,
+          hit: false,
+          missed: false,
+          x: laneXs[index % 4],
+          y: 110 + ((index % 5) * 70)
+        }));
+      }
+
+      async function init() {
+        const response = await fetch("../../analysis/tempo-batch1-analysis.json");
+        state.analysis = await response.json();
+        createBlooms();
+        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. Garden seeded with ${state.blooms.length} blooms.`;
+      }
+
+      function finish() {
+        state.live = false;
+        if (state.score >= Math.floor(state.blooms.length * 0.68)) endingEl.textContent = "Garden result: the track blooms into a coherent living canopy.";
+        else if (state.score >= Math.floor(state.blooms.length * 0.4)) endingEl.textContent = "Garden result: partial bloom. Some sections flower, others fade.";
+        else endingEl.textContent = "Garden result: the signal field collapses into static.";
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!state.analysis) await init();
+        state.score = 0;
+        state.combo = 0;
+        state.misses = 0;
+        state.bloomed = 0;
+        endingEl.textContent = "";
+        createBlooms();
+        syncStats();
+        audio.currentTime = 0;
+        state.live = true;
+        await audio.play().catch(() => {
+          state.live = false;
+          sectionEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      window.addEventListener("keydown", (event) => {
+        if (!state.live) return;
+        const lane = laneKeys.indexOf(event.code);
+        if (lane === -1) return;
+        const now = audio.currentTime;
+        const candidate = state.blooms.find((bloom) => bloom.lane === lane && !bloom.hit && !bloom.missed);
+        if (!candidate) return;
+        const delta = Math.abs(candidate.beat - now);
+        if (delta <= 0.18) {
+          candidate.hit = true;
+          state.score += 1;
+          state.combo += 1;
+          state.bloomed += 1;
+        } else {
+          state.combo = 0;
+          state.misses += 1;
+        }
+        syncStats();
+      });
+
+      audio.addEventListener("ended", finish);
+
+      function draw(now) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgba(10,17,28,.95)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        laneXs.forEach((x, index) => {
+          ctx.strokeStyle = "rgba(151,222,255,.12)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, 40);
+          ctx.lineTo(x, 480);
+          ctx.stroke();
+          ctx.fillStyle = laneColors[index];
+          ctx.fillText(laneKeys[index].replace("Key", ""), x - 4, 500);
+        });
+
+        if (state.analysis) {
+          const section = sectionForTime(now);
+          if (section) sectionEl.textContent = `${section.label.toUpperCase()} section | ${now.toFixed(2)}s / ${state.analysis.duration}s`;
+        }
+
+        state.blooms.forEach((bloom) => {
+          const delta = bloom.beat - now;
+          if (!bloom.hit && !bloom.missed && delta < -0.22) {
+            bloom.missed = true;
+            state.combo = 0;
+            state.misses += 1;
+            syncStats();
+          }
+          if (delta < -0.8 || delta > 4.2) return;
+
+          const progress = Math.max(0, Math.min(1, 1 - (delta / 4.2)));
+          const radius = bloom.hit ? 34 + Math.sin(now * 9) * 6 : 18 + (1 - progress) * 62;
+          ctx.beginPath();
+          ctx.arc(bloom.x, bloom.y, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = bloom.hit ? laneColors[bloom.lane] : "rgba(151,222,255,.9)";
+          ctx.lineWidth = bloom.hit ? 5 : 3;
+          ctx.stroke();
+
+          if (bloom.hit) {
+            ctx.beginPath();
+            ctx.arc(bloom.x, bloom.y, 12 + Math.sin(now * 8) * 4, 0, Math.PI * 2);
+            ctx.fillStyle = laneColors[bloom.lane];
+            ctx.fill();
+          }
+        });
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        draw(state.live ? audio.currentTime : 0);
+      }
+
+      animate();
+      syncStats();
+    </script>
+  </body>
+  </html>

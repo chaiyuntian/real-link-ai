@@ -47,3 +47,9 @@ The next practical layer is upload-to-template tooling:
 - one of several templates is applied immediately
 
 That keeps the system useful even without pre-generated fal tracks, and it turns the platform into a repeatable game factory instead of a single curated demo.
+
+The current template tool now supports:
+
+- multiple templates
+- difficulty-based note thinning and strike windows
+- browser-local analysis and export
