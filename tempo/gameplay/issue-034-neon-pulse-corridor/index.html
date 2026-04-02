@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Issue 34 | Neon Pulse Corridor</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
     <style>
       :root {
         --bg: #05070c;
@@ -102,10 +110,10 @@
     </div>
 
     <script type="module">
-      import * as THREE from "https://unpkg.com/three@0.170.0/build/three.module.js";
-      import { EffectComposer } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/EffectComposer.js";
-      import { RenderPass } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/RenderPass.js";
-      import { UnrealBloomPass } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/UnrealBloomPass.js";
+      import * as THREE from "three";
+      import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+      import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+      import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
       const scene = new THREE.Scene();
       scene.fog = new THREE.FogExp2(0x04060d, 0.038);
