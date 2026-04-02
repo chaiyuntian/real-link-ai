@@ -38,7 +38,7 @@ All prototypes are standalone and can be launched from the repo root index page.
 ## Tempo Domain
 
 - Issue #32 `Signal Garden` -> `tempo/gameplay/issue-032-signal-garden/`
-- Issue #33 `Drop Architect` -> planned
+- Issue #33 `Drop Architect` -> `tempo/gameplay/issue-033-drop-architect/`
 - Issue #34 `Neon Pulse Corridor` -> `tempo/gameplay/issue-034-neon-pulse-corridor/`
 - Issue #35 `Lore Frequency` -> planned
 - Issue #36 `Tempo Tribunal` -> planned
