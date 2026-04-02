@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 47 | Bassline Breaker</title>
+    <style>
+      :root {
+        --bg: #120609;
+        --panel: rgba(28, 10, 15, 0.84);
+        --line: rgba(255, 146, 94, 0.18);
+        --text: #fff1ea;
+        --muted: #d7b9aa;
+        --accent: #ff925e;
+        --accent2: #ffd774;
+        --danger: #ff5f7d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(255,146,94,.16), transparent 24%),
+          radial-gradient(circle at top right, rgba(255,215,116,.12), transparent 28%),
+          linear-gradient(180deg, #120508, #1a090d 58%, #100406 100%);
+      }
+      main { width:min(1320px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.55fr 1fr; gap:18px; }
+      .panel {
+        padding:18px;
+        border-radius:24px;
+        border:1px solid var(--line);
+        background:var(--panel);
+        box-shadow:0 18px 60px rgba(0,0,0,.24);
+      }
+      canvas {
+        width:100%;
+        height:auto;
+        aspect-ratio: 960 / 560;
+        display:block;
+        border-radius:22px;
+        background:
+          radial-gradient(circle at center, rgba(255,146,94,.08), transparent 20%),
+          linear-gradient(180deg, rgba(24,8,12,.96), rgba(12,4,6,.98));
+      }
+      .hud { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:12px; }
+      .stat { padding:12px; border-radius:16px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:26px; }
+      .small { color:var(--muted); line-height:1.65; }
+      .meter { height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); margin-top:8px; }
+      .meter span { display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--accent2),var(--accent),var(--danger)); }
+      button {
+        width:100%;
+        margin-top:10px;
+        border:0;
+        border-radius:16px;
+        padding:13px 14px;
+        font:inherit;
+        font-weight:700;
+        cursor:pointer;
+        color:#1a090d;
+        background:linear-gradient(135deg,#ffb58d,#ffe4b5);
+      }
+      a { color:#ffb58d; }
+      @media (max-width:960px) {
+        .grid { grid-template-columns:1fr; }
+        .hud { grid-template-columns:repeat(2,1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <canvas id="arena" width="960" height="560"></canvas>
+          <div class="hud">
+            <div class="stat">Score<strong id="score">0</strong></div>
+            <div class="stat">Combo<strong id="combo">0</strong></div>
+            <div class="stat">Breaks<strong id="breaks">0</strong></div>
+            <div class="stat">Leaks<strong id="leaks">0</strong></div>
+            <div class="stat">Core<strong id="core">100</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <p><a href="../../index.html">Back to tempo</a></p>
+          <h1 style="margin:0 0 10px;">Bassline Breaker</h1>
+          <p class="small">A subterranean resonance reactor is choking on bass blocks. Move with `A` and `D`, charge the hammer with `W`, and slam `Space` on the beat to shatter blocks exactly as they reach the impact lane. Wrong timing fractures the reactor core.</p>
+          <p class="small" id="section">Load reactor score.</p>
+          <div class="small">Reactor stability</div>
+          <div class="meter"><span id="stability"></span></div>
+          <p class="small" id="ending"></p>
+          <button id="start">Start Reactor</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const canvas = document.getElementById("arena");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const breaksEl = document.getElementById("breaks");
+      const leaksEl = document.getElementById("leaks");
+      const coreEl = document.getElementById("core");
+      const stabilityEl = document.getElementById("stability");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+
+      const audio = new Audio("/tempo-audio/tempo/bassline-breaker.wav");
+      audio.crossOrigin = "anonymous";
+
+      const laneXs = [220, 480, 740];
+      const state = {
+        analysis: null,
+        blocks: [],
+        particles: [],
+        score: 0,
+        combo: 0,
+        breaks: 0,
+        leaks: 0,
+        core: 100,
+        live: false,
+        lane: 1,
+        hammerCharge: 0.25
+      };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function syncHud() {
+        scoreEl.textContent = state.score;
+        comboEl.textContent = state.combo;
+        breaksEl.textContent = state.breaks;
+        leaksEl.textContent = state.leaks;
+        coreEl.textContent = Math.round(state.core);
+        stabilityEl.style.width = `${state.core}%`;
+      }
+
+      function sectionForTime(time) {
+        if (!state.analysis) return null;
+        return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
+      }
+
+      function addBurst(x, y, color, amount = 16) {
+        for (let i = 0; i < amount; i += 1) {
+          const angle = (Math.PI * 2 * i) / amount;
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * (1.8 + Math.random() * 2.8),
+            vy: Math.sin(angle) * (1.8 + Math.random() * 2.8),
+            life: 1,
+            color
+          });
+        }
+      }
+
+      function createBlocks() {
+        const beats = state.analysis.beats.filter((_, index) => index % 2 === 0);
+        state.blocks = beats.map((beat, index) => {
+          const section = sectionForTime(beat);
+          return {
+            beat,
+            lane: index % 3,
+            toughness: section.label === "drop" ? 2 : section.label === "lift" ? 1.4 : 1,
+            hit: false,
+            missed: false
+          };
+        });
+      }
+
+      async function init() {
+        if (state.analysis) return;
+        const response = await fetch("../../analysis/bassline-breaker-analysis.json");
+        state.analysis = await response.json();
+        createBlocks();
+        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. Reactor pattern loaded with ${state.blocks.length} bass blocks.`;
+      }
+
+      function finish() {
+        state.live = false;
+        if (state.core <= 0) {
+          endingEl.textContent = "Result: reactor fracture. Too many bad slams shattered the chamber before the last drop.";
+        } else if (state.breaks >= 18 && state.combo >= 7) {
+          endingEl.textContent = "Result: premium clear. The whole bassline collapses into controlled debris and the reactor purges cleanly.";
+        } else if (state.breaks >= 11) {
+          endingEl.textContent = "Result: partial purge. The biggest blocks are gone, but the chamber still hums with dangerous residue.";
+        } else {
+          endingEl.textContent = "Result: insufficient impact. The reactor never really opens up.";
+        }
+      }
+
+      function resetRun() {
+        state.score = 0;
+        state.combo = 0;
+        state.breaks = 0;
+        state.leaks = 0;
+        state.core = 100;
+        state.lane = 1;
+        state.hammerCharge = 0.25;
+        state.particles = [];
+        endingEl.textContent = "";
+        createBlocks();
+        syncHud();
+      }
+
+      document.getElementById("start").onclick = async () => {
+        await init();
+        resetRun();
+        audio.currentTime = 0;
+        state.live = true;
+        await audio.play().catch(() => {
+          state.live = false;
+          sectionEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      window.addEventListener("keydown", (event) => {
+        if (!state.live) return;
+        if (event.code === "KeyA") state.lane = Math.max(0, state.lane - 1);
+        if (event.code === "KeyD") state.lane = Math.min(2, state.lane + 1);
+        if (event.code === "KeyW") state.hammerCharge = clamp(state.hammerCharge + 0.18, 0.25, 1);
+        if (event.code === "Space") {
+          event.preventDefault();
+          const now = audio.currentTime;
+          const block = state.blocks.find((item) => !item.hit && !item.missed && item.lane === state.lane);
+          if (!block) return;
+          const delta = Math.abs(block.beat - now);
+          const impact = state.hammerCharge;
+          if (delta <= 0.17 && impact >= (0.35 * block.toughness)) {
+            block.hit = true;
+            state.breaks += 1;
+            state.combo += 1;
+            state.score += Math.round(100 * block.toughness * impact);
+            state.core = clamp(state.core + 2.5, 0, 100);
+            addBurst(laneXs[block.lane], 418, block.toughness > 1.5 ? "#ffbf7a" : "#ff925e", block.toughness > 1.5 ? 24 : 16);
+          } else {
+            state.combo = 0;
+            state.leaks += 1;
+            state.core = clamp(state.core - 12, 0, 100);
+            addBurst(laneXs[state.lane], 418, "#ff5f7d", 10);
+          }
+          state.hammerCharge = 0.25;
+          syncHud();
+        }
+      });
+
+      audio.addEventListener("ended", finish);
+
+      function draw(now) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#12070a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const section = sectionForTime(now);
+        const stageColor = section?.label === "drop" ? "#ffbf7a" : section?.label === "lift" ? "#ff925e" : "#ffd774";
+        sectionEl.textContent = section
+          ? `${section.label.toUpperCase()} impact | charge the hammer, then slam on beat | ${now.toFixed(2)}s`
+          : sectionEl.textContent;
+
+        for (let i = 0; i < 3; i += 1) {
+          ctx.fillStyle = i === state.lane ? "rgba(255,191,122,.14)" : "rgba(255,255,255,.03)";
+          ctx.fillRect(120 + i * 260, 60, 200, 430);
+          ctx.strokeStyle = "rgba(255,146,94,.1)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(120 + i * 260, 60, 200, 430);
+        }
+
+        ctx.fillStyle = "#2b0d12";
+        ctx.fillRect(110, 430, 740, 38);
+        ctx.fillStyle = stageColor;
+        ctx.fillRect(110, 418, 740, 8);
+
+        state.blocks.forEach((block) => {
+          const delta = block.beat - now;
+          if (!block.hit && !block.missed && delta < -0.2) {
+            block.missed = true;
+            state.combo = 0;
+            state.leaks += 1;
+            state.core = clamp(state.core - 10, 0, 100);
+            syncHud();
+          }
+          if (delta < -0.8 || delta > 3.5 || block.hit) return;
+          const progress = 1 - clamp(delta / 3.5, 0, 1);
+          const y = 80 + progress * 320;
+          const h = 36 + block.toughness * 24;
+          const w = 120 + block.toughness * 26;
+          const x = laneXs[block.lane] - w / 2;
+          ctx.fillStyle = block.toughness > 1.5 ? "#ffbf7a" : block.toughness > 1.1 ? "#ff925e" : "#ff714e";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = "rgba(255,255,255,.22)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, w, h);
+        });
+
+        const hammerX = laneXs[state.lane];
+        const hammerY = 360 - state.hammerCharge * 70;
+        ctx.fillStyle = "#ffd9b6";
+        ctx.fillRect(hammerX - 10, hammerY - 80, 20, 100);
+        ctx.fillStyle = stageColor;
+        ctx.fillRect(hammerX - 44, hammerY - 100, 88, 36);
+
+        ctx.fillStyle = "#fff1ea";
+        ctx.font = "600 18px Avenir Next";
+        ctx.fillText(`Charge: ${Math.round(state.hammerCharge * 100)}%`, 34, 40);
+        ctx.fillText("A/D lane, W charge, Space slam", 34, 68);
+
+        state.particles = state.particles.filter((particle) => particle.life > 0.03);
+        state.particles.forEach((particle) => {
+          particle.x += particle.vx;
+          particle.y += particle.vy;
+          particle.vx *= 0.97;
+          particle.vy *= 0.97;
+          particle.life *= 0.93;
+          ctx.globalAlpha = particle.life;
+          ctx.fillStyle = particle.color;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, 4 + (1 - particle.life) * 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        draw(state.live ? audio.currentTime : 0);
+      }
+
+      syncHud();
+      animate();
+    </script>
+  </body>
+  </html>
