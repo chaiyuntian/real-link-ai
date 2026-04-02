@@ -37,3 +37,13 @@ Bonus backlog:
 - Music generation is cheap compared with producing custom video for every prototype.
 - Beat analysis lets one song support many visual and mechanical interpretations.
 - The same track can drive lane rhythm games, runner timing games, bullet patterns, scene transitions, and narrative phase changes.
+
+## Template direction
+
+The next practical layer is upload-to-template tooling:
+
+- a user uploads a local song
+- the browser derives beat and section structure
+- one of several templates is applied immediately
+
+That keeps the system useful even without pre-generated fal tracks, and it turns the platform into a repeatable game factory instead of a single curated demo.

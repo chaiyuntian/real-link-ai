@@ -113,6 +113,7 @@ After that, every push to `main` will:
 - `docs/tempo-platform.md`: generated-music gameplay platform direction and first-wave issue queue
 - `gameplay/`: standalone gameplay folders
 - `tempo/`: static pages and analysis artifacts for the tempo domain
+  includes browser-side upload-and-template tooling for local songs
 - `indexed-video/`: authored indexed-video payloads that turn one clip into a queryable game space
 - `narrative/story-beats/`: time-aligned story state data used by narrative-heavy prototypes
 - `analysis/`: offline AI-generated video understanding artifacts

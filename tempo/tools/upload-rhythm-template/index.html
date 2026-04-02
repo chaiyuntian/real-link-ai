@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Rhythm Template Studio</title>
+    <style>
+      :root {
+        --bg: #06080d;
+        --panel: rgba(255,255,255,0.06);
+        --line: rgba(116,171,255,0.18);
+        --text: #eef7ff;
+        --muted: #aac6d9;
+        --accent: #97deff;
+        --accent2: #86ffd3;
+        --warn: #ffb26f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(116,171,255,0.22), transparent 28%),
+          radial-gradient(circle at top right, rgba(255,178,111,0.16), transparent 30%),
+          linear-gradient(180deg, #04050a, #09101a 60%, #04060b 100%);
+      }
+      main { width:min(1280px, calc(100% - 28px)); margin:0 auto; padding:28px 0 60px; }
+      .hero { margin-bottom: 22px; }
+      .eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--accent2); }
+      h1 { margin: 6px 0 10px; font-size: clamp(34px, 5vw, 58px); line-height: .94; }
+      .sub { color: var(--muted); max-width: 860px; line-height: 1.65; }
+      .grid { display:grid; grid-template-columns: 1.1fr 1fr; gap:18px; }
+      .panel {
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+      .row, .actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+      .actions { margin-top: 12px; }
+      button, input, select, textarea { font: inherit; }
+      button {
+        cursor: pointer;
+        border: 0;
+        border-radius: 14px;
+        padding: 11px 14px;
+        font-weight: 700;
+        color: #07111d;
+        background: var(--accent);
+      }
+      button.secondary { background: var(--accent2); }
+      button.warn { background: var(--warn); }
+      button:disabled { opacity: .45; cursor: default; }
+      input[type="file"], select, textarea {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.12);
+        color: inherit;
+        background: rgba(255,255,255,.06);
+      }
+      textarea { min-height: 220px; resize: vertical; }
+      .stats { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:14px; }
+      .stat { padding: 12px; border-radius: 14px; background: rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:24px; }
+      .small { color: var(--muted); line-height: 1.6; }
+      .preview {
+        position: relative;
+        height: 360px;
+        border-radius: 18px;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(8,15,24,.9), rgba(4,8,14,.92)),
+          radial-gradient(circle at center, rgba(151,222,255,.18), transparent 36%);
+      }
+      .lane {
+        position:absolute;
+        top: 0;
+        bottom: 48px;
+        width: 24%;
+        border-left: 1px solid rgba(151,222,255,.18);
+        border-right: 1px solid rgba(151,222,255,.08);
+      }
+      .lane:nth-child(1) { left: 2%; }
+      .lane:nth-child(2) { left: 26%; }
+      .lane:nth-child(3) { left: 50%; }
+      .lane:nth-child(4) { left: 74%; }
+      .strike {
+        position:absolute;
+        left: 2%;
+        right: 2%;
+        bottom: 42px;
+        height: 4px;
+        background: linear-gradient(90deg, rgba(134,255,211,.4), rgba(151,222,255,1), rgba(255,178,111,.4));
+        box-shadow: 0 0 18px rgba(151,222,255,.45);
+      }
+      .note {
+        position:absolute;
+        width: 20%;
+        height: 22px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #86ffd3, #97deff);
+        box-shadow: 0 0 18px rgba(151,222,255,.35);
+        transform: translateX(-50%);
+      }
+      .timeline {
+        position: relative;
+        height: 18px;
+        margin-top: 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.06);
+        overflow: hidden;
+      }
+      .marker {
+        position:absolute;
+        top:0;
+        bottom:0;
+        width:3px;
+        background: var(--accent);
+      }
+      .section-band {
+        position:absolute;
+        top:0;
+        bottom:0;
+        opacity: .22;
+      }
+      .pill {
+        display:inline-flex;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.06);
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 8px 8px 0;
+      }
+      @media (max-width: 980px) {
+        .grid { grid-template-columns: 1fr; }
+        .stats { grid-template-columns: repeat(2, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">tempo / upload-to-rhythm templates</div>
+        <h1>Upload a song, derive the beat graph, instantiate a playable template.</h1>
+        <p class="sub">This tool runs fully in the browser. It decodes a local audio file, estimates beats and sections, then applies one of several rhythm-game templates immediately. No server-side AI or upload is required for runtime analysis.</p>
+      </section>
+
+      <div class="grid">
+        <section class="panel">
+          <div class="row">
+            <div style="flex:1 1 280px">
+              <label for="audioFile" class="small">Local audio file</label>
+              <input id="audioFile" type="file" accept="audio/*" />
+            </div>
+            <div style="flex:1 1 220px">
+              <label for="template" class="small">Template</label>
+              <select id="template">
+                <option value="lane">Lane Runner</option>
+                <option value="burst">Burst Gates</option>
+                <option value="story">Story Pulse</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="analyze">Analyze Song</button>
+            <button id="start" class="secondary" disabled>Start Template</button>
+            <button id="export" class="warn" disabled>Export JSON</button>
+          </div>
+
+          <div class="stats">
+            <div class="stat">Duration<strong id="duration">--</strong></div>
+            <div class="stat">BPM<strong id="bpm">--</strong></div>
+            <div class="stat">Beats<strong id="beats">--</strong></div>
+            <div class="stat">Sections<strong id="sections">--</strong></div>
+          </div>
+
+          <div class="timeline" id="timeline"></div>
+          <p class="small" id="status">Choose a song file to begin.</p>
+          <p class="small" id="result"></p>
+
+          <div class="preview" id="preview">
+            <div class="lane"></div>
+            <div class="lane"></div>
+            <div class="lane"></div>
+            <div class="lane"></div>
+            <div class="strike"></div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <p><a href="../../index.html" style="color:#97deff">Back to tempo</a></p>
+          <p class="small">Templates:</p>
+          <div>
+            <span class="pill">Lane Runner: standard 4-lane hits</span>
+            <span class="pill">Burst Gates: cluster-based burst timing</span>
+            <span class="pill">Story Pulse: section beats become narrative prompts</span>
+          </div>
+          <p class="small">Exported JSON contains beat times, section estimates, energy frames, and template-specific note placements.</p>
+          <textarea id="output" spellcheck="false"></textarea>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const fileEl = document.getElementById("audioFile");
+      const templateEl = document.getElementById("template");
+      const analyzeButton = document.getElementById("analyze");
+      const startButton = document.getElementById("start");
+      const exportButton = document.getElementById("export");
+      const timelineEl = document.getElementById("timeline");
+      const previewEl = document.getElementById("preview");
+      const outputEl = document.getElementById("output");
+      const statusEl = document.getElementById("status");
+      const resultEl = document.getElementById("result");
+      const durationEl = document.getElementById("duration");
+      const bpmEl = document.getElementById("bpm");
+      const beatsEl = document.getElementById("beats");
+      const sectionsEl = document.getElementById("sections");
+
+      const laneCenters = [12, 36, 60, 84];
+      const state = {
+        analysis: null,
+        templateData: null,
+        objectUrl: null,
+        audio: null,
+        live: false,
+        combo: 0,
+        score: 0,
+        misses: 0,
+        activeLanes: [false, false, false, false]
+      };
+
+      function movingAverage(values, window) {
+        return values.map((_, index) => {
+          let sum = 0;
+          let count = 0;
+          for (let i = Math.max(0, index - window); i <= Math.min(values.length - 1, index + window); i += 1) {
+            sum += values[i];
+            count += 1;
+          }
+          return sum / count;
+        });
+      }
+
+      function detectPeaks(values, threshold, minDistance) {
+        const peaks = [];
+        let lastPeak = -minDistance;
+        for (let index = 1; index < values.length - 1; index += 1) {
+          if (index - lastPeak < minDistance) continue;
+          if (values[index] > threshold && values[index] >= values[index - 1] && values[index] >= values[index + 1]) {
+            peaks.push(index);
+            lastPeak = index;
+          }
+        }
+        return peaks;
+      }
+
+      function analyzeBuffer(audioBuffer) {
+        const raw = audioBuffer.getChannelData(0);
+        const signal = Array.from(raw);
+        const frameSize = 2048;
+        const hopSize = 512;
+        const energies = [];
+        const fluxes = [];
+        const times = [];
+        let previousSpectrum = null;
+
+        for (let start = 0; start + frameSize < signal.length; start += hopSize) {
+          const frame = signal.slice(start, start + frameSize);
+          let sumSquares = 0;
+          const windowed = frame.map((sample, index) => {
+            const weight = 0.5 - 0.5 * Math.cos((Math.PI * 2 * index) / (frame.length - 1));
+            const value = sample * weight;
+            sumSquares += value * value;
+            return value;
+          });
+          const rms = Math.sqrt(sumSquares / windowed.length);
+          const spectrum = [];
+          for (let k = 0; k < 96; k += 1) {
+            let real = 0;
+            let imag = 0;
+            for (let n = 0; n < windowed.length; n += 16) {
+              const angle = (2 * Math.PI * k * n) / windowed.length;
+              real += windowed[n] * Math.cos(angle);
+              imag -= windowed[n] * Math.sin(angle);
+            }
+            spectrum.push(Math.sqrt(real * real + imag * imag));
+          }
+          let flux = 0;
+          if (previousSpectrum) {
+            for (let i = 0; i < spectrum.length; i += 1) {
+              flux += Math.max(0, spectrum[i] - previousSpectrum[i]);
+            }
+          }
+          previousSpectrum = spectrum;
+          energies.push(rms);
+          fluxes.push(flux);
+          times.push(start / audioBuffer.sampleRate);
+        }
+
+        const maxFlux = Math.max(...fluxes, 1);
+        const novelty = energies.map((energy, index) => (energy * 0.45) + ((fluxes[index] / maxFlux) * 0.55));
+        const smooth = movingAverage(novelty, 3);
+        const mean = smooth.reduce((sum, value) => sum + value, 0) / smooth.length;
+        const variance = smooth.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / smooth.length;
+        const threshold = mean + Math.sqrt(variance) * 0.35;
+        const minDistance = Math.max(1, Math.floor((audioBuffer.sampleRate * 60 / 180) / hopSize));
+        const peakIndices = detectPeaks(smooth, threshold, minDistance);
+        const beats = peakIndices.map((index) => Number(times[index].toFixed(3)));
+
+        const intervals = beats.slice(1).map((beat, index) => beat - beats[index]);
+        const sorted = [...intervals].sort((a, b) => a - b);
+        const medianInterval = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+        const estimatedBpm = medianInterval > 0 ? Number((60 / medianInterval).toFixed(2)) : 0;
+        const duration = Number(audioBuffer.duration.toFixed(3));
+        const sections = [
+          { label: "intro", start: 0, end: Number((duration * 0.3).toFixed(3)) },
+          { label: "lift", start: Number((duration * 0.3).toFixed(3)), end: Number((duration * 0.62).toFixed(3)) },
+          { label: "drop", start: Number((duration * 0.62).toFixed(3)), end: duration }
+        ];
+
+        const energyFrames = times
+          .filter((_, index) => index % Math.max(1, Math.floor(times.length / 120)) === 0)
+          .map((time, index) => ({
+            time: Number(time.toFixed(3)),
+            energy: Number((energies[index] || 0).toFixed(6)),
+            novelty: Number((smooth[index] || 0).toFixed(6))
+          }));
+
+        return {
+          generatedAt: new Date().toISOString(),
+          source: fileEl.files[0]?.name || "uploaded-audio",
+          duration,
+          estimatedBpm,
+          beatCount: beats.length,
+          beats,
+          sections,
+          energyFrames
+        };
+      }
+
+      function instantiateTemplate(analysis, template) {
+        const notes = analysis.beats.map((beat, index) => ({
+          beat,
+          lane: template === "burst" ? (Math.floor(index / 2) % 4) : index % 4,
+          prompt:
+            template === "story"
+              ? `${analysis.sections.find((section) => beat >= section.start && beat < section.end)?.label || "phase"} cue`
+              : null
+        }));
+
+        return {
+          template,
+          notes,
+          strikeWindow: template === "burst" ? 0.16 : 0.18
+        };
+      }
+
+      function renderTimeline(analysis) {
+        timelineEl.innerHTML = "";
+        analysis.sections.forEach((section, index) => {
+          const band = document.createElement("div");
+          band.className = "section-band";
+          band.style.left = `${(section.start / analysis.duration) * 100}%`;
+          band.style.width = `${((section.end - section.start) / analysis.duration) * 100}%`;
+          band.style.background = ["#86ffd3", "#97deff", "#ffb26f"][index % 3];
+          timelineEl.appendChild(band);
+        });
+        analysis.beats.forEach((beat) => {
+          const marker = document.createElement("div");
+          marker.className = "marker";
+          marker.style.left = `${(beat / analysis.duration) * 100}%`;
+          timelineEl.appendChild(marker);
+        });
+      }
+
+      function renderPreview(currentTime = 0) {
+        Array.from(previewEl.querySelectorAll(".note")).forEach((node) => node.remove());
+        if (!state.templateData || !state.analysis) return;
+        const height = 310;
+        state.templateData.notes.forEach((note) => {
+          const delta = note.beat - currentTime;
+          if (delta < -0.5 || delta > 5) return;
+          const top = height - ((delta / 5) * height);
+          const el = document.createElement("div");
+          el.className = "note";
+          el.style.left = `${laneCenters[note.lane]}%`;
+          el.style.top = `${Math.max(12, top)}px`;
+          previewEl.appendChild(el);
+        });
+      }
+
+      function syncSummary() {
+        if (!state.analysis) return;
+        durationEl.textContent = `${state.analysis.duration}s`;
+        bpmEl.textContent = state.analysis.estimatedBpm || "--";
+        beatsEl.textContent = state.analysis.beatCount;
+        sectionsEl.textContent = state.analysis.sections.length;
+        outputEl.value = JSON.stringify({
+          analysis: state.analysis,
+          template: state.templateData
+        }, null, 2);
+      }
+
+      async function decodeSelectedFile() {
+        const file = fileEl.files?.[0];
+        if (!file) {
+          throw new Error("Pick an audio file first.");
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const buffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+        await audioContext.close();
+        return buffer;
+      }
+
+      analyzeButton.onclick = async () => {
+        try {
+          statusEl.textContent = "Decoding local song...";
+          const audioBuffer = await decodeSelectedFile();
+          statusEl.textContent = "Analyzing waveform and novelty peaks...";
+          state.analysis = analyzeBuffer(audioBuffer);
+          state.templateData = instantiateTemplate(state.analysis, templateEl.value);
+          renderTimeline(state.analysis);
+          renderPreview();
+          syncSummary();
+          startButton.disabled = false;
+          exportButton.disabled = false;
+          statusEl.textContent = "Analysis complete. Start the template or export the JSON.";
+          resultEl.textContent = `${templateEl.options[templateEl.selectedIndex].text} generated with ${state.analysis.beatCount} playable notes.`;
+        } catch (error) {
+          statusEl.textContent = error.message;
+        }
+      };
+
+      templateEl.onchange = () => {
+        if (!state.analysis) return;
+        state.templateData = instantiateTemplate(state.analysis, templateEl.value);
+        renderPreview();
+        syncSummary();
+        resultEl.textContent = `${templateEl.options[templateEl.selectedIndex].text} applied to current beat graph.`;
+      };
+
+      function finishRun() {
+        state.live = false;
+        if (state.audio) {
+          state.audio.pause();
+          state.audio.currentTime = 0;
+        }
+        resultEl.textContent = `Run complete. Score ${state.score}, combo peak ${state.combo}, misses ${state.misses}.`;
+      }
+
+      startButton.onclick = () => {
+        const file = fileEl.files?.[0];
+        if (!file || !state.templateData) return;
+        if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+        state.objectUrl = URL.createObjectURL(file);
+        state.audio = new Audio(state.objectUrl);
+        state.audio.currentTime = 0;
+        state.score = 0;
+        state.combo = 0;
+        state.misses = 0;
+        state.live = true;
+        resultEl.textContent = "Template live. Use `D`, `F`, `J`, `K` to hit lanes 1-4.";
+
+        state.audio.addEventListener("timeupdate", () => {
+          if (!state.live) return;
+          const now = state.audio.currentTime;
+          renderPreview(now);
+          state.templateData.notes.forEach((note) => {
+            if (note.hit || note.missed) return;
+            if (now > note.beat + state.templateData.strikeWindow) {
+              note.missed = true;
+              state.combo = 0;
+              state.misses += 1;
+            }
+          });
+        });
+        state.audio.addEventListener("ended", finishRun, { once: true });
+        state.audio.play().catch(() => {
+          statusEl.textContent = "Playback blocked. Interact with the page and try again.";
+          state.live = false;
+        });
+      };
+
+      exportButton.onclick = () => {
+        const blob = new Blob([outputEl.value], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "rhythm-template-analysis.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      window.addEventListener("keydown", (event) => {
+        if (!state.live || !state.audio || !state.templateData) return;
+        const laneMap = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3 };
+        const lane = laneMap[event.code];
+        if (lane == null) return;
+        const now = state.audio.currentTime;
+        const note = state.templateData.notes.find((item) => !item.hit && !item.missed && item.lane === lane);
+        if (!note) return;
+        const delta = Math.abs(note.beat - now);
+        if (delta <= state.templateData.strikeWindow) {
+          note.hit = true;
+          state.score += 1;
+          state.combo += 1;
+          resultEl.textContent = note.prompt
+            ? `Hit: ${note.prompt}`
+            : `Hit lane ${lane + 1} at ${note.beat.toFixed(2)}s`;
+        } else {
+          state.combo = 0;
+          state.misses += 1;
+        }
+      });
+    </script>
+  </body>
+  </html>
