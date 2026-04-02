@@ -11,7 +11,12 @@ const filesToCopy = [
   "gameplay/issue-002-freeze-frame-hunter/index.html",
   "gameplay/issue-003-director-split/index.html",
   "gameplay/issue-004-glitch-chase/index.html",
-  "gameplay/issue-005-remix-runner/index.html"
+  "gameplay/issue-005-remix-runner/index.html",
+  "gameplay/issue-006-subtitle-saboteur/index.html",
+  "gameplay/issue-007-meme-sniper/index.html",
+  "gameplay/issue-008-threat-tagger/index.html",
+  "gameplay/issue-009-boss-scrubber/index.html",
+  "gameplay/issue-010-emotion-switchboard/index.html"
 ];
 
 async function ensureCleanDist() {

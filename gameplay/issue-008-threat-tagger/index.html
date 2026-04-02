@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 8 | Threat Tagger</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#ecfbff; background:linear-gradient(180deg,#09131d,#03070b 60%); }
+      main { width:min(1140px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.35fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.05); border:1px solid rgba(137,216,255,.16); }
+      video { width:100%; display:block; border-radius:16px; background:#000; filter:contrast(1.04) saturate(1.08); }
+      .hud { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+      button { cursor:pointer; border:0; border-radius:999px; padding:12px 16px; background:#8fe0ff; color:#07131b; font-weight:700; }
+      .scan { margin-top:14px; font-size:14px; color:#9cc4d3; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#8fe0ff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/tears-of-steel-teaser.mp4" preload="auto"></video>
+          <div class="scan" id="scan">No active alert.</div>
+        </section>
+        <aside class="panel">
+          <h1>Threat Tagger</h1>
+          <p>Press <strong>T</strong> when the feed enters a threat window. Missed alerts cost credibility.</p>
+          <div class="hud">
+            <div>Score<br /><strong id="score">0</strong></div>
+            <div>Credibility<br /><strong id="cred">100</strong></div>
+          </div>
+          <p id="status">Desk idle.</p>
+          <button id="start">Start Monitoring</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const windows = [{start:3.0,end:3.8},{start:7.0,end:7.8},{start:11.0,end:12.1}];
+      const video = document.getElementById("video");
+      const scoreEl = document.getElementById("score");
+      const credEl = document.getElementById("cred");
+      const statusEl = document.getElementById("status");
+      const scanEl = document.getElementById("scan");
+      let score = 0, cred = 100, live = false, tagged = new Set();
+
+      function activeWindow(t) { return windows.findIndex(w => t >= w.start && t <= w.end); }
+
+      document.getElementById("start").onclick = async () => {
+        score = 0; cred = 100; live = true; tagged = new Set();
+        scoreEl.textContent = score; credEl.textContent = cred; statusEl.textContent = "Monitoring live.";
+        video.currentTime = 0;
+        await video.play().catch(() => statusEl.textContent = "Click start again.");
+      };
+
+      function tagThreat() {
+        if (!live) return;
+        const i = activeWindow(video.currentTime);
+        if (i >= 0 && !tagged.has(i)) {
+          tagged.add(i);
+          score += 180;
+          statusEl.textContent = "Threat tagged.";
+        } else {
+          cred = Math.max(0, cred - 14);
+          statusEl.textContent = "False positive.";
+        }
+        scoreEl.textContent = score;
+        credEl.textContent = cred;
+      }
+
+      document.addEventListener("keydown", e => { if (e.key.toLowerCase() === "t") tagThreat(); });
+      video.addEventListener("timeupdate", () => {
+        const i = activeWindow(video.currentTime);
+        scanEl.textContent = i >= 0 ? "ALERT: anomaly spike in frame stream" : "No active alert.";
+        windows.forEach((w, idx) => {
+          if (!tagged.has(idx) && video.currentTime > w.end) {
+            tagged.add(idx);
+            cred = Math.max(0, cred - 20);
+            credEl.textContent = cred;
+          }
+        });
+      });
+      video.addEventListener("ended", () => { live = false; statusEl.textContent = `Monitoring complete. Score ${score}.`; });
+    </script>
+  </body>
+  </html>

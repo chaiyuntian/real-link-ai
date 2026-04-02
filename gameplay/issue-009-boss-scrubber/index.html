@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 9 | Boss Scrubber</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#f2fff5; background:linear-gradient(180deg,#0a1c14,#040906 60%); }
+      main { width:min(1100px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      input[type="range"] { width:100%; margin:20px 0; }
+      .track { position:relative; height:24px; border-radius:999px; background:rgba(255,255,255,.08); margin-top:10px; overflow:hidden; }
+      .zone { position:absolute; top:0; bottom:0; background:rgba(255,90,120,.45); }
+      .safe { position:absolute; top:0; bottom:0; background:rgba(126,255,207,.2); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#7effcf">Back</a></p>
+      <section class="panel">
+        <h1>Boss Scrubber</h1>
+        <p>Drag the timeline from start to finish. If your handle enters a forbidden slice, you take damage. Reach the end before the clock runs out.</p>
+        <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+        <div class="track" id="track">
+          <div class="safe" style="left:0; width:100%"></div>
+          <div class="zone" style="left:18%; width:10%"></div>
+          <div class="zone" style="left:42%; width:8%"></div>
+          <div class="zone" style="left:66%; width:11%"></div>
+        </div>
+        <input id="slider" type="range" min="0" max="1000" value="0" />
+        <p>Health: <strong id="health">100</strong> | Time left: <strong id="time">20</strong> | Status: <span id="status">Idle.</span></p>
+        <button id="start">Start Scrub</button>
+      </section>
+    </main>
+    <script>
+      const slider = document.getElementById("slider");
+      const video = document.getElementById("video");
+      const healthEl = document.getElementById("health");
+      const timeEl = document.getElementById("time");
+      const statusEl = document.getElementById("status");
+      const danger = [[180,280],[420,500],[660,770]];
+      let health = 100, time = 20, live = false, timer = null;
+
+      function inDanger(v) { return danger.some(([a,b]) => v >= a && v <= b); }
+
+      function sync() {
+        const pct = Number(slider.value) / 1000;
+        video.currentTime = (video.duration || 0) * pct;
+        if (live) {
+          if (inDanger(Number(slider.value))) {
+            health = Math.max(0, health - 2);
+            statusEl.textContent = "Boss slice contact.";
+          } else {
+            statusEl.textContent = "Clean path.";
+          }
+          healthEl.textContent = health;
+          if (health <= 0) {
+            live = false;
+            clearInterval(timer);
+            statusEl.textContent = "You were shredded by the timeline.";
+          }
+          if (Number(slider.value) >= 1000) {
+            live = false;
+            clearInterval(timer);
+            statusEl.textContent = `Clear with ${health} health left.`;
+          }
+        }
+      }
+
+      slider.addEventListener("input", sync);
+      document.getElementById("start").onclick = () => {
+        health = 100; time = 20; live = true; slider.value = 0;
+        healthEl.textContent = health; timeEl.textContent = time; statusEl.textContent = "Scrub now.";
+        clearInterval(timer);
+        timer = setInterval(() => {
+          if (!live) return;
+          time -= 1;
+          timeEl.textContent = time;
+          if (time <= 0) {
+            live = false;
+            clearInterval(timer);
+            statusEl.textContent = "Time over.";
+          }
+        }, 1000);
+        sync();
+      };
+    </script>
+  </body>
+  </html>

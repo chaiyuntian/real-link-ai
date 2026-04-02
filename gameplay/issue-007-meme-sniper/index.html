@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 7 | Meme Sniper</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#f7f4ff; background:linear-gradient(180deg,#130b24,#05030a 58%); }
+      main { width:min(1140px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.35fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      button { cursor:pointer; border:0; border-radius:999px; padding:12px 16px; background:#c5a6ff; color:#190d2d; font-weight:700; }
+      .meter { height:16px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:18px; }
+      .needle { height:100%; width:0; background:linear-gradient(90deg,#ff93d8,#c5a6ff); }
+      .small { color:#ccbfe3; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#c5a6ff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/big-buck-bunny-trailer.mov" preload="auto"></video>
+          <div class="meter"><div class="needle" id="needle"></div></div>
+        </section>
+        <aside class="panel">
+          <h1>Meme Sniper</h1>
+          <p>Press <strong>M</strong> inside tiny lock windows to capture a repeat pocket. Every hit grants one forced loop and combo score.</p>
+          <p>Score: <strong id="score">0</strong></p>
+          <p>Combo: <strong id="combo">0</strong></p>
+          <p class="small" id="status">Start run.</p>
+          <button id="start">Start Snipe</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const windows = [2.6, 5.4, 8.2, 11.0, 14.1];
+      const video = document.getElementById("video");
+      const needle = document.getElementById("needle");
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const statusEl = document.getElementById("status");
+      let score = 0, combo = 0, live = false, used = new Set(), looping = false;
+
+      async function start() {
+        score = 0; combo = 0; live = true; used = new Set(); looping = false;
+        scoreEl.textContent = score; comboEl.textContent = combo; statusEl.textContent = "Hunt live.";
+        video.currentTime = 0;
+        await video.play().catch(() => statusEl.textContent = "Click start again.");
+      }
+
+      function tryLock() {
+        if (!live || looping) return;
+        const t = video.currentTime;
+        let hit = -1, delta = 99;
+        windows.forEach((w, i) => {
+          if (used.has(i)) return;
+          const d = Math.abs(w - t);
+          if (d < delta) { delta = d; hit = i; }
+        });
+        if (hit >= 0 && delta <= 0.18) {
+          used.add(hit);
+          combo += 1;
+          score += 120 + combo * 25;
+          scoreEl.textContent = score;
+          comboEl.textContent = combo;
+          statusEl.textContent = "Pocket locked. Forced loop.";
+          looping = true;
+          const anchor = Math.max(0, windows[hit] - 0.16);
+          video.currentTime = anchor;
+          setTimeout(() => {
+            video.currentTime = anchor;
+            video.play();
+            looping = false;
+          }, 260);
+        } else {
+          combo = 0;
+          comboEl.textContent = combo;
+          statusEl.textContent = "No clean loop lock.";
+        }
+      }
+
+      document.getElementById("start").onclick = start;
+      document.addEventListener("keydown", e => { if (e.key.toLowerCase() === "m") tryLock(); });
+      video.addEventListener("timeupdate", () => {
+        const t = video.currentTime;
+        const nearest = Math.min(...windows.filter((w, i) => !used.has(i)).map(w => Math.abs(w - t)).concat([2]));
+        needle.style.width = `${Math.max(0, 100 - nearest * 260)}%`;
+      });
+      video.addEventListener("ended", () => { live = false; statusEl.textContent = `Run over. Score ${score}.`; });
+    </script>
+  </body>
+  </html>

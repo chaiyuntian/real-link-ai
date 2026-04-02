@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 6 | Subtitle Saboteur</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#fff6eb; background:linear-gradient(180deg,#201008,#090503 58%); }
+      main { width:min(1140px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.35fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      .choices { display:grid; gap:10px; margin-top:14px; }
+      button { cursor:pointer; border:0; border-radius:14px; padding:12px 14px; background:#ffbf7b; color:#241206; font-weight:700; text-align:left; }
+      .subtitle { margin-top:14px; min-height:56px; padding:14px; border-radius:14px; background:rgba(0,0,0,.28); font-size:24px; line-height:1.3; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#ffbf7b">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/big-buck-bunny-trailer.mov" preload="auto"></video>
+          <div class="subtitle" id="subtitle">Press start. Then choose the most gloriously wrong subtitle.</div>
+        </section>
+        <aside class="panel">
+          <h1>Subtitle Saboteur</h1>
+          <p>At each cue, the trailer pauses and you choose the caption that best sabotages the scene.</p>
+          <p>Score: <strong id="score">0</strong></p>
+          <p id="prompt">Ready.</p>
+          <button id="start">Start Sabotage</button>
+          <div class="choices" id="choices"></div>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const cues = [
+        { at: 2.1, text: "Big emotional reveal.", options: ["I regret becoming a tax auditor.", "Witness the woodland prophecy.", "Lunch break was extended by force."], correct: 0 },
+        { at: 6.0, text: "The scene escalates.", options: ["This is a nature documentary.", "Please restart the rabbit router.", "Silence. The moss council votes now."], correct: 1 },
+        { at: 10.6, text: "Final absurdity spike.", options: ["I have become the cutscene.", "We should have emailed instead.", "Deploy emergency banana law."], correct: 2 }
+      ];
+      const video = document.getElementById("video");
+      const subtitle = document.getElementById("subtitle");
+      const scoreEl = document.getElementById("score");
+      const promptEl = document.getElementById("prompt");
+      const choicesEl = document.getElementById("choices");
+      let score = 0, idx = 0, live = false;
+
+      function renderChoices(cue) {
+        choicesEl.innerHTML = "";
+        cue.options.forEach((label, i) => {
+          const b = document.createElement("button");
+          b.textContent = label;
+          b.onclick = () => {
+            if (!live) return;
+            subtitle.textContent = label;
+            if (i === cue.correct) {
+              score += 160;
+              promptEl.textContent = "Clean sabotage.";
+            } else {
+              score += 40;
+              promptEl.textContent = "Wrong kind of wrong.";
+            }
+            scoreEl.textContent = score;
+            choicesEl.innerHTML = "";
+            video.play();
+          };
+          choicesEl.appendChild(b);
+        });
+      }
+
+      document.getElementById("start").onclick = async () => {
+        score = 0; idx = 0; live = true;
+        scoreEl.textContent = score;
+        promptEl.textContent = "Scene live.";
+        subtitle.textContent = "";
+        choicesEl.innerHTML = "";
+        video.currentTime = 0;
+        await video.play().catch(() => promptEl.textContent = "Click start again.");
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || idx >= cues.length) return;
+        const cue = cues[idx];
+        if (video.currentTime >= cue.at) {
+          video.pause();
+          promptEl.textContent = cue.text;
+          renderChoices(cue);
+          idx += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        promptEl.textContent = `Run complete. Score ${score}.`;
+      });
+    </script>
+  </body>
+  </html>

@@ -105,3 +105,55 @@ More ideas already worth converting into future issues:
 - Emotion matching: classify trailer mood changes under time pressure.
 - Surveillance operator: tag threat frames in live-action footage before the timer expires.
 
+## Second-wave selection
+
+With the first wave deployed, I continued filtering for ideas that:
+
+1. Still reuse the same source clips.
+2. Feel structurally different from the first five.
+3. Are fast to test in a browser without extra preprocessing.
+
+## Selected second-wave ideas
+
+6. Subtitle Saboteur
+   - Video: Big Buck Bunny
+   - Core: pick the funniest wrong caption under tight timing pressure
+
+7. Meme Sniper
+   - Video: Big Buck Bunny
+   - Core: lock tiny repeat pockets before the beat window closes
+
+8. Threat Tagger
+   - Video: Tears of Steel
+   - Core: act like a surveillance operator tagging danger windows live
+
+9. Boss Scrubber
+   - Video: Sintel
+   - Core: manually scrub through a danger corridor and avoid forbidden slices
+
+10. Emotion Switchboard
+   - Video: Sintel
+   - Core: rapidly classify mood-state shifts as the trailer advances
+
+## Why these five
+
+- `Subtitle Saboteur` uses interpretive humor instead of timing precision.
+- `Meme Sniper` makes micro-loop capture the entire objective.
+- `Threat Tagger` reframes footage as operator telemetry.
+- `Boss Scrubber` turns the video timeline itself into the obstacle course.
+- `Emotion Switchboard` makes trailer reading into a reactive categorization game.
+
+## Third-wave imagination prompts
+
+To keep the process open-ended, I added a deliberate expansion pass around operations that can be applied to the same exact footage:
+
+- Time stretch: one scene becomes stealth at 0.5x and panic at 1.6x.
+- Reverse causality: the player must understand a clip played backward and act before the meaning reappears.
+- Slice theft: gameplay is about stealing, repeating, or suppressing 0.2-second fragments.
+- Tempo duel: the player is not matching beats, but forcing the story to obey a target pulse.
+- Narrative forgery: the player makes the clip “mean” something different through overlays and intervention timing.
+- Surveillance paranoia: normal frames become threat evidence only because the system says so.
+- Emotional drift: the same shot can be labeled grief, awe, fear, or triumph depending on when it is sampled.
+- Compression combat: intentionally degrade, stutter, or freeze footage to gain control.
+- Director sabotage: the player wins by making the edit intentionally worse in the most effective way.
+- Memory test: replay one micro-moment across multiple timings and ask the player what actually changed.

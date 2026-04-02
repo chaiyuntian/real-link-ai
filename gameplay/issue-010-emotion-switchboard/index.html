@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 10 | Emotion Switchboard</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#eff7ff; background:linear-gradient(180deg,#0a1325,#04070f 60%); }
+      main { width:min(1140px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.35fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      .buttons { display:grid; gap:10px; margin-top:12px; }
+      button { cursor:pointer; border:0; border-radius:14px; padding:12px 14px; background:#92b9ff; color:#091426; font-weight:700; text-align:left; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#92b9ff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+        </section>
+        <aside class="panel">
+          <h1>Emotion Switchboard</h1>
+          <p>Classify the current emotional state before the prompt window expires.</p>
+          <p>Score: <strong id="score">0</strong></p>
+          <p id="status">Waiting.</p>
+          <button id="start">Start Reading</button>
+          <div class="buttons" id="buttons"></div>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const prompts = [
+        { at: 2.2, prompt: "Current mode?", answer: "Wonder" },
+        { at: 5.1, prompt: "Current mode?", answer: "Fear" },
+        { at: 7.8, prompt: "Current mode?", answer: "Resolve" },
+        { at: 10.4, prompt: "Current mode?", answer: "Awe" }
+      ];
+      const labels = ["Wonder", "Fear", "Resolve", "Awe"];
+      const video = document.getElementById("video");
+      const scoreEl = document.getElementById("score");
+      const statusEl = document.getElementById("status");
+      const buttonsEl = document.getElementById("buttons");
+      let idx = 0, score = 0, live = false, awaiting = false;
+
+      function showButtons(prompt) {
+        buttonsEl.innerHTML = "";
+        labels.forEach(label => {
+          const b = document.createElement("button");
+          b.textContent = label;
+          b.onclick = () => {
+            if (!awaiting) return;
+            awaiting = false;
+            if (label === prompt.answer) {
+              score += 140;
+              statusEl.textContent = `Correct: ${label}`;
+            } else {
+              score = Math.max(0, score - 50);
+              statusEl.textContent = `Misread: ${label}`;
+            }
+            scoreEl.textContent = score;
+            buttonsEl.innerHTML = "";
+            video.play();
+          };
+          buttonsEl.appendChild(b);
+        });
+      }
+
+      document.getElementById("start").onclick = async () => {
+        idx = 0; score = 0; live = true; awaiting = false;
+        scoreEl.textContent = score;
+        statusEl.textContent = "Read live.";
+        buttonsEl.innerHTML = "";
+        video.currentTime = 0;
+        await video.play().catch(() => statusEl.textContent = "Click start again.");
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || idx >= prompts.length || awaiting) return;
+        const p = prompts[idx];
+        if (video.currentTime >= p.at) {
+          awaiting = true;
+          video.pause();
+          statusEl.textContent = p.prompt;
+          showButtons(p);
+          idx += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        statusEl.textContent = `Switchboard done. Score ${score}.`;
+      });
+    </script>
+  </body>
+  </html>

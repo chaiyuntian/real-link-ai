@@ -58,6 +58,11 @@ After that, every push to `main` will:
 - Issue 3: `Director Split`
 - Issue 4: `Glitch Chase`
 - Issue 5: `Remix Runner`
+- Issue 6: `Subtitle Saboteur`
+- Issue 7: `Meme Sniper`
+- Issue 8: `Threat Tagger`
+- Issue 9: `Boss Scrubber`
+- Issue 10: `Emotion Switchboard`
 
 ## Repo structure
 
