@@ -1,0 +1,112 @@
+[
+  {
+    "issue": 32,
+    "slug": "signal-garden",
+    "title": "Signal Garden",
+    "tag": "Bloom Rhythm",
+    "gameplayPath": "/tempo/gameplay/issue-032-signal-garden/",
+    "audioSlug": "signal-garden",
+    "analysisSlug": "signal-garden",
+    "prompt": "Create a 34 second luminous organic synth-pop rhythm track for a browser game called Signal Garden. The intro should feel like seedlings waking up, the middle should bloom with crisp percussion and airy chords, and the drop should feel like a radiant greenhouse opening. Clear beat accents, emotional but playable.",
+    "story": "A dormant greenhouse on an orbital station only reactivates if the player grows beat-flowers in phase with the song."
+  },
+  {
+    "issue": 33,
+    "slug": "drop-architect",
+    "title": "Drop Architect",
+    "tag": "Section Builder",
+    "gameplayPath": "/tempo/gameplay/issue-033-drop-architect/",
+    "audioSlug": "drop-architect",
+    "analysisSlug": "drop-architect",
+    "prompt": "Create a 34 second precision electronic construction anthem for a rhythm game called Drop Architect. Minimal tense intro, mechanical lift with sharper percussion, then a confident geometric drop for synchronized building. Punchy transient beats, bright synth stabs, no vocals.",
+    "story": "A city in the clouds must be assembled section by section before the chorus storm arrives."
+  },
+  {
+    "issue": 34,
+    "slug": "neon-pulse-corridor",
+    "title": "Neon Pulse Corridor",
+    "tag": "Three.js Rhythm",
+    "gameplayPath": "/tempo/gameplay/issue-034-neon-pulse-corridor/",
+    "audioSlug": "neon-pulse-corridor",
+    "analysisSlug": "neon-pulse-corridor",
+    "prompt": "Create a 34 second futuristic chase track for a three-dimensional browser rhythm runner. Fast neon tunnel mood, clear kick and snare pattern, strong lane-friendly beat markers, with a bright cinematic drop and a final sprint section. Instrumental only.",
+    "story": "A courier races through a collapsing signal corridor before the city loses its last clean transmission route."
+  },
+  {
+    "issue": 44,
+    "slug": "orbital-aegis",
+    "title": "Orbital Aegis",
+    "tag": "Defense Template",
+    "gameplayPath": "/tempo/gameplay/issue-044-orbital-aegis/",
+    "audioSlug": "orbital-aegis",
+    "analysisSlug": "orbital-aegis",
+    "prompt": "Create a 34 second heroic synth defense track for a rhythm action game called Orbital Aegis. Start with tense surveillance pulses, rise into disciplined drum pressure, and deliver a dramatic shimmering drop with precise parry moments. Strong impact beats, no vocals.",
+    "story": "A guardian core in orbit can only survive if its defense ring parries incoming bloom-shards in exact musical phase."
+  },
+  {
+    "issue": 45,
+    "slug": "wave-signal-surf",
+    "title": "Wave Signal Surf",
+    "tag": "Wavefield Template",
+    "gameplayPath": "/tempo/gameplay/issue-045-wave-signal-surf/",
+    "audioSlug": "wave-signal-surf",
+    "analysisSlug": "wave-signal-surf",
+    "prompt": "Create a 34 second fluid electronic surf track for an interactive voxel wavefield game. The intro should shimmer, the lift should feel like rising tides, and the drop should become a fast luminous current with clean beat anchors. Instrumental, highly rhythmic.",
+    "story": "The player rides a signal ocean and must catch relay points across a living wavegrid before the current folds."
+  },
+  {
+    "issue": 46,
+    "slug": "chorus-circuit",
+    "title": "Chorus Circuit",
+    "tag": "Node Capture",
+    "gameplayPath": "/tempo/gameplay/issue-046-chorus-circuit/",
+    "audioSlug": "chorus-circuit",
+    "analysisSlug": "chorus-circuit",
+    "prompt": "Create a 34 second sleek electro anthem for a node-capture rhythm game called Chorus Circuit. The track should feel tactical and futuristic, with stable intro pulses, rising section momentum, and a triumphant drop. Clear beat accents suitable for spatial capture gameplay.",
+    "story": "A broken music grid wakes up node by node as the player reconnects a ruined chorus network."
+  },
+  {
+    "issue": 47,
+    "slug": "bassline-breaker",
+    "title": "Bassline Breaker",
+    "tag": "Impact Arcade",
+    "gameplayPath": "/tempo/gameplay/issue-047-bassline-breaker/",
+    "audioSlug": "bassline-breaker",
+    "analysisSlug": "bassline-breaker",
+    "prompt": "Create a 34 second bass-heavy arcade breakbeat track for an impact-driven rhythm game called Bassline Breaker. Heavy low end, punchy drums, aggressive but clean transient hits, with a hard drop and satisfying impact spaces. Instrumental only.",
+    "story": "A subterranean reactor is clogged with resonance blocks and only rhythmic impacts can shatter them safely."
+  },
+  {
+    "issue": 48,
+    "slug": "lore-frequency",
+    "title": "Lore Frequency",
+    "tag": "Narrative Scanner",
+    "gameplayPath": "/tempo/gameplay/issue-048-lore-frequency/",
+    "audioSlug": "lore-frequency",
+    "analysisSlug": "lore-frequency",
+    "prompt": "Create a 34 second mysterious melodic electronic track for a narrative rhythm game called Lore Frequency. Start with cryptic pulses, develop into emotional harmonic motion, and reveal a luminous story drop. Clear beat anchors, cinematic but playable.",
+    "story": "An archive buried under static reveals its history only when the player tunes fragments of memory into rhythm."
+  },
+  {
+    "issue": 49,
+    "slug": "sync-mirage",
+    "title": "Sync Mirage",
+    "tag": "Mirror Reflex",
+    "gameplayPath": "/tempo/gameplay/issue-049-sync-mirage/",
+    "audioSlug": "sync-mirage",
+    "analysisSlug": "sync-mirage",
+    "prompt": "Create a 34 second illusion-themed synth rhythm track for a mirror reflex game called Sync Mirage. The intro should feel deceptive, the lift should alternate left-right energy, and the drop should become a glossy high-speed mirage. Strong stereo-feeling rhythm cues, no vocals.",
+    "story": "A hall of mirrored echoes keeps duplicating the player’s motion, and only precise sync decisions reveal the true path."
+  },
+  {
+    "issue": 50,
+    "slug": "last-chorus-escape",
+    "title": "Last Chorus Escape",
+    "tag": "Final Sprint",
+    "gameplayPath": "/tempo/gameplay/issue-050-last-chorus-escape/",
+    "audioSlug": "last-chorus-escape",
+    "analysisSlug": "last-chorus-escape",
+    "prompt": "Create a 34 second finale-ready electronic escape track for a browser rhythm game called Last Chorus Escape. Begin with urgency, escalate through a tightening middle section, and explode into a big emotional final chorus drop with clear beat markers for evasive play.",
+    "story": "A collapsing theater of sound is going dark, and the player has one last chorus to escape with the song intact."
+  }
+]

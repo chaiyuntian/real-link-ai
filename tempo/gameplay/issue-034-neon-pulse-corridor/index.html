@@ -29,7 +29,7 @@
         border-radius:18px;
         padding:14px 16px;
         display:grid;
-        grid-template-columns:2fr repeat(4, 1fr);
+        grid-template-columns:2fr repeat(5, 1fr);
         gap:12px;
         align-items:center;
       }
@@ -55,6 +55,19 @@
       }
       a { color:#97deff; }
       strong { display:block; font-size:28px; margin-top:4px; }
+      .meter {
+        margin-top: 10px;
+        height: 12px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255,255,255,.06);
+      }
+      .meter span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #86ffd3, #97deff, #ffb26f);
+      }
       @media (max-width:900px) {
         .hud { grid-template-columns:1fr 1fr; }
       }
@@ -70,6 +83,7 @@
       <div>Combo<strong id="combo">0</strong></div>
       <div>Misses<strong id="misses">0</strong></div>
       <div>Lane<strong id="lane">1</strong></div>
+      <div>Hull<strong id="hull">100</strong></div>
     </div>
 
     <div class="panel">
@@ -81,12 +95,17 @@
         <option value="normal" selected>Normal</option>
         <option value="hard">Hard</option>
       </select>
+      <div class="small" style="margin-top:10px;">Corridor stability</div>
+      <div class="meter"><span id="stability"></span></div>
       <p class="small" id="ending"></p>
       <button id="start">Start Run</button>
     </div>
 
     <script type="module">
       import * as THREE from "https://unpkg.com/three@0.170.0/build/three.module.js";
+      import { EffectComposer } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/EffectComposer.js";
+      import { RenderPass } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/RenderPass.js";
+      import { UnrealBloomPass } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/UnrealBloomPass.js";
 
       const scene = new THREE.Scene();
       scene.fog = new THREE.FogExp2(0x04060d, 0.038);
@@ -97,6 +116,14 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
+
+      const composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+      const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.3, 0.9);
+      bloomPass.threshold = 0.0;
+      bloomPass.strength = 0.85;
+      bloomPass.radius = 0.36;
+      composer.addPass(bloomPass);
 
       const ambient = new THREE.AmbientLight(0x95a9ff, 1.4);
       const point = new THREE.PointLight(0x7ffff0, 25, 50);
@@ -140,6 +167,8 @@
       const comboEl = document.getElementById("combo");
       const missesEl = document.getElementById("misses");
       const laneEl = document.getElementById("lane");
+      const hullEl = document.getElementById("hull");
+      const stabilityEl = document.getElementById("stability");
       const sectionEl = document.getElementById("section");
       const endingEl = document.getElementById("ending");
       const difficultyEl = document.getElementById("difficulty");
@@ -153,15 +182,30 @@
       let score = 0;
       let combo = 0;
       let misses = 0;
+      let hull = 100;
       let live = false;
       let baseSpeed = 15;
       let strikeWindow = 0.19;
+      let bursts = [];
+      const stars = Array.from({ length: 120 }, () => ({
+        x: (Math.random() - 0.5) * 18,
+        y: (Math.random() - 0.5) * 8,
+        z: -Math.random() * 90,
+        s: 0.02 + Math.random() * 0.08
+      }));
+      const starGeometry = new THREE.BufferGeometry();
+      const starPositions = new Float32Array(stars.length * 3);
+      const starMaterial = new THREE.PointsMaterial({ color: 0x96dfff, size: 0.12, transparent: true, opacity: 0.6 });
+      const starfield = new THREE.Points(starGeometry, starMaterial);
+      scene.add(starfield);
 
       function syncStats() {
         scoreEl.textContent = score;
         comboEl.textContent = combo;
         missesEl.textContent = misses;
         laneEl.textContent = laneIndex + 1;
+        hullEl.textContent = Math.round(hull);
+        stabilityEl.style.width = `${hull}%`;
       }
 
       function sectionForTime(time) {
@@ -191,6 +235,22 @@
         };
       }
 
+      function spawnBurst(note) {
+        for (let i = 0; i < 12; i += 1) {
+          const particle = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 6, 6),
+            new THREE.MeshBasicMaterial({ color: [0xffb26f, 0x97deff, 0x85ffd3][note.lane] })
+          );
+          particle.position.copy(note.mesh.position);
+          scene.add(particle);
+          bursts.push({
+            mesh: particle,
+            velocity: new THREE.Vector3((Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.2, -0.15 - Math.random() * 0.2),
+            life: 1
+          });
+        }
+      }
+
       function buildNotes() {
         notes.forEach((note) => scene.remove(note.mesh));
         const filteredBeats = analysis.beats.filter((_, index) => {
@@ -210,9 +270,10 @@
 
       function finish() {
         live = false;
-        if (score >= Math.floor((analysis?.beatCount || 1) * 0.7)) endingEl.textContent = "Run result: the corridor holds and the track resolves as a clean neon chase.";
-        else if (score >= Math.floor((analysis?.beatCount || 1) * 0.4)) endingEl.textContent = "Run result: partial control. The song survives, but the run drifts.";
-        else endingEl.textContent = "Run result: the corridor breaks apart under missed timing.";
+        if (hull <= 0) endingEl.textContent = "Run result: the corridor shears apart before the final gate chain resolves.";
+        else if (score >= Math.floor((analysis?.beatCount || 1) * 0.7)) endingEl.textContent = "Run result: premium chase line. The corridor stays coherent through the whole drop.";
+        else if (score >= Math.floor((analysis?.beatCount || 1) * 0.4)) endingEl.textContent = "Run result: partial control. The route stays open, but the run drifts.";
+        else endingEl.textContent = "Run result: too many bad hits. The tunnel loses sync and tears open.";
       }
 
       document.getElementById("start").onclick = async () => {
@@ -222,6 +283,9 @@
         score = 0;
         combo = 0;
         misses = 0;
+        hull = 100;
+        bursts.forEach((burst) => scene.remove(burst.mesh));
+        bursts = [];
         laneIndex = 1;
         buildNotes();
         syncStats();
@@ -246,11 +310,14 @@
             candidate.hit = true;
             score += combo >= 8 ? 2 : 1;
             combo += 1;
+            hull = Math.min(100, hull + 1.8);
             candidate.mesh.material.emissive.setHex(0xffffff);
             candidate.mesh.scale.setScalar(1.35);
+            spawnBurst(candidate);
           } else {
             combo = 0;
             misses += 1;
+            hull = Math.max(0, hull - 8);
           }
           syncStats();
         }
@@ -272,6 +339,16 @@
           wall.material.opacity = 0.2 + Math.sin((time * 2) + index * 0.4) * 0.12;
         });
 
+        stars.forEach((star, index) => {
+          star.z += 0.8 + baseSpeed * 0.05;
+          if (star.z > 6) star.z = -90;
+          starPositions[index * 3] = star.x;
+          starPositions[index * 3 + 1] = star.y;
+          starPositions[index * 3 + 2] = star.z;
+        });
+        starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+        starGeometry.attributes.position.needsUpdate = true;
+
         notes.forEach((note) => {
           const z = 1.4 - ((note.beat - time) * speed);
           note.mesh.position.set(laneXs[note.lane], -0.2, z);
@@ -280,6 +357,7 @@
             note.missed = true;
             misses += 1;
             combo = 0;
+            hull = Math.max(0, hull - 10);
             syncStats();
           }
 
@@ -290,17 +368,32 @@
           }
         });
 
+        bursts = bursts.filter((burst) => burst.life > 0.04);
+        bursts.forEach((burst) => {
+          burst.mesh.position.add(burst.velocity);
+          burst.life *= 0.92;
+          burst.mesh.scale.setScalar(0.4 + (1 - burst.life));
+          burst.mesh.material.opacity = burst.life;
+          burst.mesh.material.transparent = true;
+          if (burst.life <= 0.04) scene.remove(burst.mesh);
+        });
+
+        if (live && hull <= 0) {
+          finish();
+        }
+
         laneLines.children.forEach((lane, index) => {
           lane.material.color.setHex(index === laneIndex ? 0x97deff : 0x274475);
         });
 
-        renderer.render(scene, camera);
+        composer.render();
       }
 
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
       });
 
       animate();

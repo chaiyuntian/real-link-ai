@@ -6,11 +6,13 @@
     <title>Issue 32 | Signal Garden</title>
     <style>
       :root {
-        --bg: #061018;
-        --panel: rgba(6, 13, 22, 0.88);
-        --line: rgba(140, 220, 255, 0.18);
-        --text: #eef8ff;
-        --muted: #acc7d9;
+        --bg: #07110f;
+        --panel: rgba(7, 18, 17, 0.82);
+        --line: rgba(128, 255, 214, 0.16);
+        --text: #ecfff8;
+        --muted: #accfca;
+        --accent: #84ffd6;
+        --accent2: #ffd783;
       }
       * { box-sizing: border-box; }
       body {
@@ -18,66 +20,95 @@
         color: var(--text);
         font-family: "Avenir Next", "Segoe UI", sans-serif;
         background:
-          radial-gradient(circle at top left, rgba(136,255,211,.18), transparent 26%),
-          radial-gradient(circle at top right, rgba(151,222,255,.22), transparent 32%),
-          linear-gradient(180deg, #03060a, #08121b 60%, #04060b 100%);
+          radial-gradient(circle at top left, rgba(132,255,214,.12), transparent 24%),
+          radial-gradient(circle at top right, rgba(255,215,131,.12), transparent 28%),
+          linear-gradient(180deg, #020807, #081513 50%, #030807 100%);
       }
-      main { width:min(1220px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
-      .grid { display:grid; grid-template-columns:1.45fr 1fr; gap:18px; }
+      main { width: min(1280px, calc(100% - 28px)); margin: 0 auto; padding: 22px 0 40px; }
+      .grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: 18px; }
       .panel {
-        padding:16px;
-        border-radius:20px;
-        border:1px solid var(--line);
+        padding: 18px;
+        border-radius: 24px;
+        border: 1px solid var(--line);
         background: var(--panel);
+        box-shadow: 0 18px 60px rgba(0,0,0,.24);
       }
       canvas {
-        width:100%;
-        height:520px;
-        display:block;
-        border-radius:18px;
+        width: 100%;
+        height: 560px;
+        display: block;
+        border-radius: 22px;
         background:
-          radial-gradient(circle at center, rgba(151,222,255,.12), transparent 26%),
-          linear-gradient(180deg, rgba(8,15,24,.95), rgba(5,8,14,.98));
+          radial-gradient(circle at center, rgba(132,255,214,.08), transparent 24%),
+          linear-gradient(180deg, rgba(6,16,14,.96), rgba(3,10,9,.98));
       }
-      .hud { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
-      .stat { padding:12px; border-radius:14px; background:rgba(255,255,255,.04); }
-      .stat strong { display:block; margin-top:4px; font-size:26px; }
-      .small { color: var(--muted); line-height: 1.6; }
+      .hud {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .stat {
+        padding: 12px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.04);
+      }
+      .stat strong { display: block; margin-top: 4px; font-size: 26px; }
+      .small { color: var(--muted); line-height: 1.65; }
+      .meter {
+        height: 12px;
+        margin-top: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255,255,255,.06);
+      }
+      .meter span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #5fe8bf, #84ffd6, #ffd783);
+      }
       button {
-        width:100%;
-        margin-top:10px;
-        border:0;
-        border-radius:14px;
-        padding:12px 14px;
-        font:inherit;
-        font-weight:700;
-        cursor:pointer;
-        background:#97deff;
-        color:#06121d;
+        width: 100%;
+        margin-top: 10px;
+        border: 0;
+        border-radius: 16px;
+        padding: 13px 14px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        color: #07211a;
+        background: linear-gradient(135deg, var(--accent), #b6ffe8);
       }
-      a { color:#97deff; }
-      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+      a { color: #97ffe1; }
+      @media (max-width: 960px) {
+        .grid { grid-template-columns: 1fr; }
+        .hud { grid-template-columns: repeat(2, 1fr); }
+      }
     </style>
   </head>
   <body>
     <main>
       <div class="grid">
         <section class="panel">
-          <canvas id="garden" width="900" height="520"></canvas>
+          <canvas id="garden" width="940" height="560"></canvas>
           <div class="hud">
             <div class="stat">Score<strong id="score">0</strong></div>
             <div class="stat">Combo<strong id="combo">0</strong></div>
-            <div class="stat">Misses<strong id="misses">0</strong></div>
-            <div class="stat">Bloomed<strong id="bloomed">0</strong></div>
+            <div class="stat">Perfect<strong id="perfect">0</strong></div>
+            <div class="stat">Wilted<strong id="misses">0</strong></div>
+            <div class="stat">Canopy<strong id="canopy">0%</strong></div>
           </div>
         </section>
         <aside class="panel">
           <p><a href="../../index.html">Back to tempo</a></p>
-          <h1>Signal Garden</h1>
-          <p class="small">Every beat becomes a bloom seed. Hit `D`, `F`, `J`, `K` when the seed ring closes to grow the garden instead of letting it wither.</p>
-          <p class="small" id="section">Load garden score.</p>
+          <h1 style="margin:0 0 10px;">Signal Garden</h1>
+          <p class="small">A dead orbital greenhouse comes back one bloom at a time. Seeds spiral in from four petals. Hit `D`, `F`, `J`, `K` exactly on the growth ring to grow the canopy instead of letting the chamber wilt.</p>
+          <p class="small" id="section">Load the greenhouse score.</p>
+          <div class="small">Greenhouse vitality</div>
+          <div class="meter"><span id="vitality"></span></div>
           <p class="small" id="ending"></p>
-          <button id="start">Start Garden</button>
+          <button id="start">Start Greenhouse</button>
         </aside>
       </div>
     </main>
@@ -86,32 +117,46 @@
       const ctx = canvas.getContext("2d");
       const scoreEl = document.getElementById("score");
       const comboEl = document.getElementById("combo");
+      const perfectEl = document.getElementById("perfect");
       const missesEl = document.getElementById("misses");
-      const bloomedEl = document.getElementById("bloomed");
+      const canopyEl = document.getElementById("canopy");
+      const vitalityEl = document.getElementById("vitality");
       const sectionEl = document.getElementById("section");
       const endingEl = document.getElementById("ending");
 
+      const center = { x: canvas.width / 2, y: canvas.height / 2 };
       const laneKeys = ["KeyD", "KeyF", "KeyJ", "KeyK"];
-      const laneXs = [170, 355, 545, 730];
-      const laneColors = ["#86ffd3", "#97deff", "#ffb26f", "#b89cff"];
+      const laneAngles = [-Math.PI * 0.68, -Math.PI * 0.32, Math.PI * 0.32, Math.PI * 0.68];
+      const laneColors = ["#7dffd7", "#b1ff9c", "#ffd783", "#9ce7ff"];
       const audio = new Audio("/tempo-audio/tempo/tempo-batch1.wav");
       audio.crossOrigin = "anonymous";
 
       const state = {
         analysis: null,
-        blooms: [],
+        notes: [],
+        particles: [],
+        petals: [],
+        vines: [],
         score: 0,
         combo: 0,
+        perfect: 0,
         misses: 0,
-        bloomed: 0,
+        vitality: 72,
+        canopy: 0,
         live: false
       };
 
-      function syncStats() {
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function syncHud() {
         scoreEl.textContent = state.score;
         comboEl.textContent = state.combo;
+        perfectEl.textContent = state.perfect;
         missesEl.textContent = state.misses;
-        bloomedEl.textContent = state.bloomed;
+        canopyEl.textContent = `${Math.round(state.canopy)}%`;
+        vitalityEl.style.width = `${state.vitality}%`;
       }
 
       function sectionForTime(time) {
@@ -119,41 +164,90 @@
         return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
       }
 
-      function createBlooms() {
+      function addBurst(x, y, color, amount) {
+        for (let i = 0; i < amount; i += 1) {
+          const angle = (Math.PI * 2 * i) / amount;
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * (1.4 + Math.random() * 2.6),
+            vy: Math.sin(angle) * (1.4 + Math.random() * 2.6),
+            life: 1,
+            color
+          });
+        }
+      }
+
+      function regrowPetal(index) {
+        state.petals[index].size = 1;
+        state.petals[index].alpha = 1;
+      }
+
+      function growVine(index, sectionLabel) {
+        const angle = laneAngles[index];
+        const stageBoost = sectionLabel === "drop" ? 1.35 : sectionLabel === "lift" ? 1.12 : 0.92;
+        state.vines.push({
+          angle,
+          length: 70 + Math.random() * 40,
+          width: 6 + Math.random() * 10,
+          color: laneColors[index],
+          stageBoost
+        });
+      }
+
+      function createGarden() {
+        state.petals = laneAngles.map((angle, index) => ({
+          angle,
+          size: 0.35 + index * 0.03,
+          alpha: 0.55
+        }));
+        state.vines = [];
+      }
+
+      function createNotes() {
         const beats = state.analysis.beats.filter((_, index) => index % 2 === 0);
-        state.blooms = beats.map((beat, index) => ({
+        state.notes = beats.map((beat, index) => ({
           beat,
           lane: index % 4,
           hit: false,
           missed: false,
-          x: laneXs[index % 4],
-          y: 110 + ((index % 5) * 70)
+          bloom: 0
         }));
       }
 
       async function init() {
+        if (state.analysis) return;
         const response = await fetch("../../analysis/tempo-batch1-analysis.json");
         state.analysis = await response.json();
-        createBlooms();
-        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. Garden seeded with ${state.blooms.length} blooms.`;
+        createGarden();
+        createNotes();
+        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. Four petals online, ${state.notes.length} growth seeds queued.`;
       }
 
       function finish() {
         state.live = false;
-        if (state.score >= Math.floor(state.blooms.length * 0.68)) endingEl.textContent = "Garden result: the track blooms into a coherent living canopy.";
-        else if (state.score >= Math.floor(state.blooms.length * 0.4)) endingEl.textContent = "Garden result: partial bloom. Some sections flower, others fade.";
-        else endingEl.textContent = "Garden result: the signal field collapses into static.";
+        if (state.canopy >= 82 && state.perfect >= 10) {
+          endingEl.textContent = "Result: the greenhouse is fully awake. The final drop becomes a living canopy of light.";
+        } else if (state.canopy >= 56) {
+          endingEl.textContent = "Result: most chambers recover. The garden still shows scars, but it holds.";
+        } else {
+          endingEl.textContent = "Result: the biome never stabilizes. Too many seeds withered before rooting.";
+        }
       }
 
       document.getElementById("start").onclick = async () => {
-        if (!state.analysis) await init();
+        await init();
         state.score = 0;
         state.combo = 0;
+        state.perfect = 0;
         state.misses = 0;
-        state.bloomed = 0;
+        state.vitality = 72;
+        state.canopy = 0;
+        state.particles = [];
         endingEl.textContent = "";
-        createBlooms();
-        syncStats();
+        createGarden();
+        createNotes();
+        syncHud();
         audio.currentTime = 0;
         state.live = true;
         await audio.play().catch(() => {
@@ -167,69 +261,171 @@
         const lane = laneKeys.indexOf(event.code);
         if (lane === -1) return;
         const now = audio.currentTime;
-        const candidate = state.blooms.find((bloom) => bloom.lane === lane && !bloom.hit && !bloom.missed);
+        const candidate = state.notes.find((note) => note.lane === lane && !note.hit && !note.missed);
         if (!candidate) return;
         const delta = Math.abs(candidate.beat - now);
-        if (delta <= 0.18) {
+        if (delta <= 0.19) {
+          const perfect = delta <= 0.085;
+          const angle = laneAngles[lane];
+          const x = center.x + Math.cos(angle) * 132;
+          const y = center.y + Math.sin(angle) * 132;
           candidate.hit = true;
-          state.score += 1;
+          candidate.bloom = 1;
+          state.score += perfect ? 180 : 110;
           state.combo += 1;
-          state.bloomed += 1;
+          if (perfect) state.perfect += 1;
+          state.vitality = clamp(state.vitality + (perfect ? 4.5 : 2.5), 0, 100);
+          state.canopy = clamp(state.canopy + (perfect ? 4.2 : 2.6), 0, 100);
+          addBurst(x, y, laneColors[lane], perfect ? 18 : 12);
+          regrowPetal(lane);
+          growVine(lane, sectionForTime(now)?.label || "intro");
         } else {
           state.combo = 0;
           state.misses += 1;
+          state.vitality = clamp(state.vitality - 5.2, 0, 100);
         }
-        syncStats();
+        syncHud();
       });
 
       audio.addEventListener("ended", finish);
 
+      function drawPetal(angle, size, alpha, color) {
+        ctx.save();
+        ctx.translate(center.x, center.y);
+        ctx.rotate(angle);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(0, -138, 58 * size, 118 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       function draw(now) {
+        const section = sectionForTime(now);
+        const stageGlow = section?.label === "drop" ? "rgba(255,215,131,.08)" : section?.label === "lift" ? "rgba(156,231,255,.08)" : "rgba(132,255,214,.08)";
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "rgba(10,17,28,.95)";
+        ctx.fillStyle = "#05100e";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        laneXs.forEach((x, index) => {
-          ctx.strokeStyle = "rgba(151,222,255,.12)";
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(x, 40);
-          ctx.lineTo(x, 480);
-          ctx.stroke();
-          ctx.fillStyle = laneColors[index];
-          ctx.fillText(laneKeys[index].replace("Key", ""), x - 4, 500);
-        });
+        const radial = ctx.createRadialGradient(center.x, center.y, 30, center.x, center.y, 260);
+        radial.addColorStop(0, "rgba(132,255,214,.08)");
+        radial.addColorStop(1, stageGlow);
+        ctx.fillStyle = radial;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        if (state.analysis) {
-          const section = sectionForTime(now);
-          if (section) sectionEl.textContent = `${section.label.toUpperCase()} section | ${now.toFixed(2)}s / ${state.analysis.duration}s`;
+        for (let ring = 0; ring < 4; ring += 1) {
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, 90 + (ring * 36), 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(132,255,214,${0.06 + ring * 0.03})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
         }
 
-        state.blooms.forEach((bloom) => {
-          const delta = bloom.beat - now;
-          if (!bloom.hit && !bloom.missed && delta < -0.22) {
-            bloom.missed = true;
+        state.vines.forEach((vine, index) => {
+          ctx.save();
+          ctx.translate(center.x, center.y);
+          ctx.rotate(vine.angle);
+          ctx.strokeStyle = vine.color;
+          ctx.lineWidth = vine.width;
+          ctx.globalAlpha = 0.18 + Math.min(0.5, index / 20);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(14, -40, -18, -95, 0, -(160 + vine.length * vine.stageBoost));
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        state.petals.forEach((petal, index) => {
+          drawPetal(petal.angle, petal.size, petal.alpha, laneColors[index]);
+          petal.size = clamp(petal.size * 0.994, 0.35, 1.08);
+          petal.alpha = clamp(petal.alpha * 0.996, 0.5, 1);
+        });
+
+        laneAngles.forEach((angle, index) => {
+          const x = center.x + Math.cos(angle) * 132;
+          const y = center.y + Math.sin(angle) * 132;
+          ctx.beginPath();
+          ctx.arc(x, y, 17, 0, Math.PI * 2);
+          ctx.fillStyle = laneColors[index];
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = "#05211a";
+          ctx.font = "bold 18px Avenir Next";
+          ctx.fillText(laneKeys[index].replace("Key", ""), x - 6, y + 6);
+        });
+
+        if (section) {
+          sectionEl.textContent = `${section.label.toUpperCase()} canopy | vitality ${Math.round(state.vitality)} | ${now.toFixed(2)}s`;
+        }
+
+        state.notes.forEach((note) => {
+          const delta = note.beat - now;
+          if (!note.hit && !note.missed && delta < -0.22) {
+            note.missed = true;
             state.combo = 0;
             state.misses += 1;
-            syncStats();
+            state.vitality = clamp(state.vitality - 5.6, 0, 100);
+            syncHud();
           }
-          if (delta < -0.8 || delta > 4.2) return;
+          if (delta < -0.8 || delta > 4.4) return;
 
-          const progress = Math.max(0, Math.min(1, 1 - (delta / 4.2)));
-          const radius = bloom.hit ? 34 + Math.sin(now * 9) * 6 : 18 + (1 - progress) * 62;
+          const angle = laneAngles[note.lane];
+          const progress = 1 - clamp(delta / 4.4, 0, 1);
+          const radius = 290 - progress * 158;
+          const x = center.x + Math.cos(angle) * radius;
+          const y = center.y + Math.sin(angle) * radius;
+
+          if (note.hit) {
+            note.bloom *= 0.93;
+            if (note.bloom > 0.02) {
+              ctx.beginPath();
+              ctx.arc(x, y, 18 + (1 - note.bloom) * 40, 0, Math.PI * 2);
+              ctx.strokeStyle = laneColors[note.lane];
+              ctx.lineWidth = 3;
+              ctx.globalAlpha = note.bloom;
+              ctx.stroke();
+              ctx.globalAlpha = 1;
+            }
+            return;
+          }
+
           ctx.beginPath();
-          ctx.arc(bloom.x, bloom.y, radius, 0, Math.PI * 2);
-          ctx.strokeStyle = bloom.hit ? laneColors[bloom.lane] : "rgba(151,222,255,.9)";
-          ctx.lineWidth = bloom.hit ? 5 : 3;
+          ctx.arc(x, y, 16 + Math.sin(now * 5 + note.lane) * 3, 0, Math.PI * 2);
+          ctx.fillStyle = laneColors[note.lane];
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, 28 + (1 - progress) * 18, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(236,255,248,${0.45 + progress * 0.3})`;
+          ctx.lineWidth = 2.5;
           ctx.stroke();
-
-          if (bloom.hit) {
-            ctx.beginPath();
-            ctx.arc(bloom.x, bloom.y, 12 + Math.sin(now * 8) * 4, 0, Math.PI * 2);
-            ctx.fillStyle = laneColors[bloom.lane];
-            ctx.fill();
-          }
         });
+
+        state.particles = state.particles.filter((particle) => particle.life > 0.04);
+        state.particles.forEach((particle) => {
+          particle.x += particle.vx;
+          particle.y += particle.vy;
+          particle.vy *= 0.97;
+          particle.vx *= 0.98;
+          particle.life *= 0.94;
+          ctx.globalAlpha = particle.life;
+          ctx.fillStyle = particle.color;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, 4 + (1 - particle.life) * 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, 52 + Math.sin(now * 2.4) * 6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(132,255,214,.16)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, 20 + (state.canopy / 100) * 16, 0, Math.PI * 2);
+        ctx.fillStyle = "#bffff0";
+        ctx.fill();
       }
 
       function animate() {
@@ -237,8 +433,9 @@
         draw(state.live ? audio.currentTime : 0);
       }
 
+      syncHud();
+      createGarden();
       animate();
-      syncStats();
     </script>
   </body>
   </html>
