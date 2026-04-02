@@ -41,7 +41,7 @@
         border-radius: 20px;
         padding: 14px 16px;
         display: grid;
-        grid-template-columns: 2fr repeat(5, 1fr);
+        grid-template-columns: 2fr repeat(6, 1fr);
         gap: 12px;
       }
       .panel {
@@ -109,6 +109,7 @@
       <div>Core HP<strong id="health">100</strong></div>
       <div>Parries<strong id="parries">0</strong></div>
       <div>Blooms<strong id="blooms">0</strong></div>
+      <div>Threat<strong id="threat">0%</strong></div>
     </div>
 
     <div class="panel">
@@ -143,6 +144,7 @@
       const healthEl = document.getElementById("health");
       const parriesEl = document.getElementById("parries");
       const bloomsEl = document.getElementById("blooms");
+      const threatEl = document.getElementById("threat");
       const endingEl = document.getElementById("ending");
       const syncMeterEl = document.getElementById("syncMeter");
 
@@ -164,6 +166,7 @@
         health: 100,
         parries: 0,
         bloomsDefused: 0,
+        threat: 0,
         guardAngle: -Math.PI / 2,
         guardWidth: Math.PI / 3,
         travelTime: 2.2,
@@ -195,6 +198,7 @@
         healthEl.textContent = Math.max(0, Math.round(state.health));
         parriesEl.textContent = state.parries;
         bloomsEl.textContent = state.bloomsDefused;
+        threatEl.textContent = `${Math.round(state.threat)}%`;
       }
 
       function normalizeAngle(angle) {
@@ -259,6 +263,20 @@
         });
 
         state.enemies.sort((a, b) => a.beat - b.beat);
+
+        const finalDrop = state.analysis.sections.find((section) => section.label === "drop");
+        if (finalDrop) {
+          state.enemies.push({
+            id: "boss-bloom",
+            type: "boss",
+            angle: 0,
+            beat: Number((finalDrop.end - 0.82).toFixed(3)),
+            hit: false,
+            missed: false,
+            splitFromBloom: false
+          });
+          state.enemies.sort((a, b) => a.beat - b.beat);
+        }
       }
 
       function spawnSplitShards(parent) {
@@ -323,16 +341,16 @@
         state.parries += 1;
         state.combo += 1;
         state.score += perfect ? 140 : 90;
-        if (enemy.type === "bloom") {
+        if (enemy.type === "bloom" || enemy.type === "boss") {
           state.bloomsDefused += 1;
-          state.score += 110;
+          state.score += enemy.type === "boss" ? 220 : 110;
           spawnSplitShards(enemy);
         }
         createRipple(perfect ? "134,255,211" : "151,222,255");
         syncMeterEl.style.width = `${Math.min(100, (state.combo / 20) * 100)}%`;
         sectionEl.textContent = perfect
           ? `Perfect parry on ${enemy.type}.`
-          : `Guard held. ${enemy.type === "bloom" ? "Bloom split into follow-up shards." : "Shard deflected."}`;
+          : `Guard held. ${enemy.type === "boss" ? "Boss bloom cracked into follow-up shards." : enemy.type === "bloom" ? "Bloom split into follow-up shards." : "Shard deflected."}`;
         syncHud();
       }
 
@@ -362,6 +380,7 @@
         state.health = 100;
         state.parries = 0;
         state.bloomsDefused = 0;
+        state.threat = 0;
         state.ripples = [];
         syncMeterEl.style.width = "0%";
         endingEl.textContent = "";
@@ -447,6 +466,21 @@
         ctx.arc(centerX, centerY, 132, 0, Math.PI * 2);
         ctx.stroke();
 
+        state.enemies
+          .filter((enemy) => !enemy.hit && !enemy.missed)
+          .forEach((enemy) => {
+            const lead = enemy.beat - time;
+            if (lead < 0.18 || lead > 1.15) return;
+            const telegraphAlpha = 1 - ((lead - 0.18) / 0.97);
+            ctx.beginPath();
+            ctx.strokeStyle = enemy.type === "boss"
+              ? `rgba(255,108,138,${0.36 * telegraphAlpha})`
+              : `rgba(151,222,255,${0.18 * telegraphAlpha})`;
+            ctx.lineWidth = enemy.type === "boss" ? 12 : 6;
+            ctx.arc(centerX, centerY, 170, enemy.angle - 0.09, enemy.angle + 0.09);
+            ctx.stroke();
+          });
+
         state.ripples = state.ripples.filter((ripple) => ripple.alpha > 0.02);
         state.ripples.forEach((ripple) => {
           ctx.beginPath();
@@ -497,8 +531,8 @@
           const x = centerX + Math.cos(enemy.angle) * radius;
           const y = centerY + Math.sin(enemy.angle) * radius;
           const approaching = Math.max(0, Math.min(1, 1 - ((enemy.beat - now) / state.travelTime)));
-          const size = enemy.type === "bloom" ? 74 + approaching * 16 : 54 + approaching * 12;
-          const sprite = enemy.type === "bloom" ? bassBloom : tempoShard;
+          const size = enemy.type === "boss" ? 118 + approaching * 24 : enemy.type === "bloom" ? 74 + approaching * 16 : 54 + approaching * 12;
+          const sprite = enemy.type === "boss" || enemy.type === "bloom" ? bassBloom : tempoShard;
 
           ctx.save();
           ctx.translate(x, y);
@@ -507,11 +541,11 @@
           ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
           ctx.restore();
 
-          if (enemy.type === "bloom") {
+          if (enemy.type === "bloom" || enemy.type === "boss") {
             ctx.beginPath();
-            ctx.strokeStyle = "rgba(255,178,111,0.7)";
-            ctx.lineWidth = 2;
-            ctx.arc(x, y, size * 0.42, 0, Math.PI * 2);
+            ctx.strokeStyle = enemy.type === "boss" ? "rgba(255,108,138,0.9)" : "rgba(255,178,111,0.7)";
+            ctx.lineWidth = enemy.type === "boss" ? 4 : 2;
+            ctx.arc(x, y, size * (enemy.type === "boss" ? 0.52 : 0.42), 0, Math.PI * 2);
             ctx.stroke();
           }
         });
@@ -520,6 +554,8 @@
       function updateRun(now) {
         if (!state.live) return;
         const section = sectionForTime(now);
+        const visibleThreats = state.enemies.filter((enemy) => !enemy.hit && !enemy.missed && enemy.beat - now < 1.2 && enemy.beat - now > -0.2).length;
+        state.threat = Math.min(100, visibleThreats * 22 + (section?.label === "drop" ? 18 : 0));
         sectionEl.textContent = `${section.label.toUpperCase()} | rotate to align, tap space to parry at ring | ${now.toFixed(2)}s`;
 
         state.enemies.forEach((enemy) => {
@@ -527,7 +563,7 @@
           if (now > enemy.beat + state.parryWindow) {
             enemy.missed = true;
             state.combo = 0;
-            state.health -= enemy.type === "bloom" ? 16 : enemy.splitFromBloom ? 9 : 7;
+            state.health -= enemy.type === "boss" ? 24 : enemy.type === "bloom" ? 16 : enemy.splitFromBloom ? 9 : 7;
             createRipple("255,108,138");
           }
         });
