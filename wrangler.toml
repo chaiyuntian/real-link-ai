@@ -1,0 +1,13 @@
+name = "real-link-ai-ideas-batch1"
+main = "worker/index.js"
+compatibility_date = "2026-04-01"
+workers_dev = true
+account_id = "2462af7e529ad7b8ffdc3c389caabeb6"
+
+routes = [
+  { pattern = "ideas-batch1.real-link.ai", custom_domain = true }
+]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"

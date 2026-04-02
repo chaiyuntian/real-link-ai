@@ -20,6 +20,37 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000/`.
 
+## Cloudflare deployment
+
+This repo can deploy the static gameplay site to `ideas-batch1.real-link.ai` and sync the video assets to the public R2 bucket domain `videos-batch1.real-link.ai`.
+
+### One-time bootstrap
+
+```bash
+bash scripts/bootstrap_cloudflare.sh
+```
+
+### Manual deploy
+
+```bash
+VIDEO_BASE_URL=https://videos-batch1.real-link.ai npm run deploy:cloudflare
+```
+
+### GitHub Actions
+
+Set the repository secret:
+
+```bash
+gh secret set CLOUDFLARE_API_TOKEN
+```
+
+After that, every push to `main` will:
+
+- download the 3 public source videos
+- rebuild the deployable site into `dist/`
+- sync the video files into R2
+- deploy the Worker bound to `ideas-batch1.real-link.ai`
+
 ## Current prototype wave
 
 - Issue 1: `Rhythm Cut`
@@ -35,4 +66,3 @@ Then open `http://localhost:8000/`.
 - `docs/issue-map.md`: issue to prototype mapping
 - `gameplay/`: standalone gameplay folders
 - `scripts/download_videos.sh`: reproducible asset download script
-

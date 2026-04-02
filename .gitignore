@@ -3,3 +3,5 @@ assets/tmp/*
 !assets/videos/.gitkeep
 !assets/tmp/.gitkeep
 .DS_Store
+dist
+node_modules
