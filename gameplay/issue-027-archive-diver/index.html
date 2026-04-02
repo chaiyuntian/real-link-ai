@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 27 | Archive Diver</title>
+    <style>
+      :root {
+        --bg: #06101a;
+        --panel: rgba(255,255,255,.05);
+        --line: rgba(145,211,255,.16);
+        --text: #edf8ff;
+        --muted: #bad2e3;
+      }
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:var(--text); background:linear-gradient(180deg,#08111c,#04070b 68%); }
+      main { width:min(1220px,calc(100% - 24px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.5fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; border:1px solid var(--line); background:var(--panel); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      .toolbar, .lens-row, .query-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+      button { border:0; border-radius:14px; padding:12px 14px; font:inherit; font-weight:700; cursor:pointer; background:#9adfff; color:#06121d; }
+      .query-row button, .lens-row button { flex:1 1 180px; text-align:left; }
+      .active { outline:2px solid #fff; }
+      .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+      .copy, .small { color:var(--muted); line-height:1.58; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9adfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" controls preload="auto"></video>
+          <div class="lens-row" id="lenses"></div>
+          <div class="toolbar">
+            <button id="submit">Submit Current Reading</button>
+            <button id="reveal">Reveal Indexed Hint</button>
+          </div>
+          <div class="stats">
+            <div>Resolved<br /><strong id="resolved">0</strong></div>
+            <div>Errors<br /><strong id="errors">0</strong></div>
+            <div>Time<br /><strong id="timeView">0.00</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h1>Archive Diver</h1>
+          <p class="copy">This is indexed-video gameplay. The same trailer is searchable through multiple authored lenses. Each query asks for the strongest moment in a different interpretive index.</p>
+          <div class="query-row" id="queries"></div>
+          <p id="prompt" class="small">Load the archive.</p>
+          <p id="hint" class="small"></p>
+          <p id="ending" class="small"></p>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const video = document.getElementById("video");
+      const lensesEl = document.getElementById("lenses");
+      const queriesEl = document.getElementById("queries");
+      const promptEl = document.getElementById("prompt");
+      const hintEl = document.getElementById("hint");
+      const endingEl = document.getElementById("ending");
+      const resolvedEl = document.getElementById("resolved");
+      const errorsEl = document.getElementById("errors");
+      const timeViewEl = document.getElementById("timeView");
+
+      let payload = null;
+      let currentLens = null;
+      let queryIndex = 0;
+      let resolved = 0;
+      let errors = 0;
+
+      function syncStats() {
+        resolvedEl.textContent = resolved;
+        errorsEl.textContent = errors;
+        timeViewEl.textContent = video.currentTime.toFixed(2);
+      }
+
+      function renderLenses() {
+        lensesEl.innerHTML = "";
+        payload.lenses.forEach((lens) => {
+          const button = document.createElement("button");
+          button.textContent = `${lens.name}: ${lens.description}`;
+          button.style.background = lens.color;
+          button.className = currentLens === lens.id ? "active" : "";
+          button.onclick = () => {
+            currentLens = lens.id;
+            renderLenses();
+            promptEl.textContent = `Active lens: ${lens.name}`;
+          };
+          lensesEl.appendChild(button);
+        });
+      }
+
+      function renderQueries() {
+        queriesEl.innerHTML = "";
+        payload.queries.forEach((query, index) => {
+          const button = document.createElement("button");
+          button.textContent = `${index + 1}. ${query.prompt}`;
+          button.className = index === queryIndex ? "active" : "";
+          button.onclick = () => {
+            queryIndex = index;
+            renderQueries();
+            promptEl.textContent = query.prompt;
+            currentLens = query.lens;
+            renderLenses();
+          };
+          queriesEl.appendChild(button);
+        });
+      }
+
+      function currentQuery() {
+        return payload.queries[queryIndex];
+      }
+
+      function finish() {
+        if (resolved >= payload.queries.length) endingEl.textContent = "Archive result: you navigated the clip as an indexed evidence space.";
+      }
+
+      document.getElementById("submit").onclick = () => {
+        if (!payload) return;
+        const query = currentQuery();
+        const delta = Math.abs(video.currentTime - query.targetTime);
+        if (currentLens === query.lens && delta <= query.window) {
+          resolved += 1;
+          hintEl.textContent = "Correct. The current lens and time support the query.";
+          queryIndex += 1;
+          if (queryIndex >= payload.queries.length) {
+            queryIndex = payload.queries.length - 1;
+            finish();
+          } else {
+            const nextQuery = currentQuery();
+            currentLens = nextQuery.lens;
+            promptEl.textContent = nextQuery.prompt;
+          }
+        } else {
+          errors += 1;
+          hintEl.textContent = `Not enough support. Need lens "${query.lens}" near ${query.targetTime.toFixed(1)}s.`;
+        }
+        renderQueries();
+        renderLenses();
+        syncStats();
+      };
+
+      document.getElementById("reveal").onclick = () => {
+        if (!payload) return;
+        const query = currentQuery();
+        const match = payload.moments.find((moment) => moment.lens === query.lens && Math.abs(moment.time - query.targetTime) < 1);
+        hintEl.textContent = match ? `Indexed hint: ${match.reading}` : "No authored hint available for this query.";
+      };
+
+      video.addEventListener("timeupdate", syncStats);
+
+      async function init() {
+        const response = await fetch("../../indexed-video/sintel-archive-index.json");
+        payload = await response.json();
+        currentLens = payload.queries[0].lens;
+        promptEl.textContent = payload.queries[0].prompt;
+        renderQueries();
+        renderLenses();
+        syncStats();
+      }
+
+      init();
+    </script>
+  </body>
+  </html>

@@ -82,6 +82,9 @@ After that, every push to `main` will:
 - Issue 26: `Pursuit Cartographer`
 - Issue 27: `Archive Diver`
 - Issue 28: `Myth Engine`
+- Issue 29: `Indexed Drift`
+- Issue 30: `Tempo Cartographer`
+- Issue 31: `Clip Alibi`
 
 ## Repo structure
 
@@ -92,8 +95,10 @@ After that, every push to `main` will:
 - `docs/timeline-annotation-pipeline.md`: annotation-tool to gameplay pipeline
 - `docs/video-discovery-and-understanding.md`: sourcing and offline AI-understanding workflow
 - `docs/gameplay-point-tool-selection.md`: recommended tools for inserting gameplay points into video
+- `docs/indexed-video-gameplay.md`: how indexed or parametric video can become a gameplay axis
 - `docs/short-video-platform.md`: platform direction and next-wave concept backlog
 - `gameplay/`: standalone gameplay folders
+- `indexed-video/`: authored indexed-video payloads that turn one clip into a queryable game space
 - `narrative/story-beats/`: time-aligned story state data used by narrative-heavy prototypes
 - `analysis/`: offline AI-generated video understanding artifacts
 - `annotation-exports/`: export-like timeline annotations before normalization

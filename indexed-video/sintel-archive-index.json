@@ -1,0 +1,90 @@
+{
+  "video": "sintel-trailer.mp4",
+  "lenses": [
+    {
+      "id": "threat",
+      "name": "Threat",
+      "color": "#ff9370",
+      "description": "Read the trailer as imminent danger."
+    },
+    {
+      "id": "bond",
+      "name": "Bond",
+      "color": "#8effce",
+      "description": "Read the trailer as attachment and emotional pull."
+    },
+    {
+      "id": "legend",
+      "name": "Legend",
+      "color": "#9bb7ff",
+      "description": "Read the trailer as myth and world-scale fate."
+    }
+  ],
+  "queries": [
+    {
+      "id": "q1",
+      "prompt": "Find the moment where connection feels strongest.",
+      "lens": "bond",
+      "targetTime": 3.5,
+      "window": 0.7
+    },
+    {
+      "id": "q2",
+      "prompt": "Find the first shot that most strongly reads as direct threat.",
+      "lens": "threat",
+      "targetTime": 6.8,
+      "window": 0.8
+    },
+    {
+      "id": "q3",
+      "prompt": "Find the shot that turns the trailer into legend instead of incident.",
+      "lens": "legend",
+      "targetTime": 9.6,
+      "window": 0.8
+    }
+  ],
+  "moments": [
+    {
+      "time": 1.1,
+      "lens": "legend",
+      "score": 3,
+      "reading": "the trailer opens with world-building scale instead of personal detail"
+    },
+    {
+      "time": 2.2,
+      "lens": "bond",
+      "score": 4,
+      "reading": "the emotional center starts to surface in character framing"
+    },
+    {
+      "time": 3.5,
+      "lens": "bond",
+      "score": 5,
+      "reading": "the strongest attachment beat lands here"
+    },
+    {
+      "time": 5.1,
+      "lens": "threat",
+      "score": 3,
+      "reading": "uncertainty rises, but danger has not peaked yet"
+    },
+    {
+      "time": 6.8,
+      "lens": "threat",
+      "score": 5,
+      "reading": "the footage reads as a direct and immediate threat event"
+    },
+    {
+      "time": 8.1,
+      "lens": "legend",
+      "score": 4,
+      "reading": "scale expands from pursuit into something larger and mythic"
+    },
+    {
+      "time": 9.6,
+      "lens": "legend",
+      "score": 5,
+      "reading": "this is the clearest myth-reading in the whole trailer"
+    }
+  ]
+}

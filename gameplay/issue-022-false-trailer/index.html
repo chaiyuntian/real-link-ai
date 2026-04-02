@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 22 | False Trailer</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#f0f8ff; background:linear-gradient(180deg,#08101c,#04070c 68%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.45fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; border:1px solid rgba(145,211,255,.15); background:rgba(255,255,255,.05); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      .choices { display:grid; gap:10px; margin-top:14px; }
+      button { border:0; border-radius:14px; padding:12px 14px; font:inherit; font-weight:700; cursor:pointer; background:#9adfff; color:#06121d; text-align:left; }
+      .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+      .copy, .small { color:#b8d2e2; line-height:1.58; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9adfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/tears-of-steel-teaser.mp4" preload="auto"></video>
+          <div class="stats">
+            <div>Romance<br /><strong id="romance">0</strong></div>
+            <div>Threat<br /><strong id="threat">0</strong></div>
+            <div>Myth<br /><strong id="myth">0</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h1>False Trailer</h1>
+          <p class="copy">Forge a different genre from the same footage. Each prompt appears at a plot beat. Choose the interpretation you want the trailer to push.</p>
+          <p id="prompt" class="small">Queue the fake edit.</p>
+          <div id="choices" class="choices"></div>
+          <p id="ending" class="small"></p>
+          <button id="start">Start Fake Edit</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const beats = [
+        {
+          time: 1.9,
+          prompt: "What is the opening promise of this trailer?",
+          options: [
+            { label: "A reunion that still aches", effect: { romance: 2, myth: 1 } },
+            { label: "A city already under siege", effect: { threat: 2 } },
+            { label: "A prophecy waking up", effect: { myth: 2 } }
+          ]
+        },
+        {
+          time: 4.8,
+          prompt: "How should the central confrontation read?",
+          options: [
+            { label: "Unfinished emotional history", effect: { romance: 2 } },
+            { label: "Pure tactical danger", effect: { threat: 2 } },
+            { label: "Fated collision", effect: { myth: 2, threat: 1 } }
+          ]
+        },
+        {
+          time: 8.4,
+          prompt: "What does the ending beat imply?",
+          options: [
+            { label: "Love survives the wreckage", effect: { romance: 2 } },
+            { label: "The war is only starting", effect: { threat: 2 } },
+            { label: "This story belongs to legend now", effect: { myth: 3 } }
+          ]
+        }
+      ];
+
+      const video = document.getElementById("video");
+      const promptEl = document.getElementById("prompt");
+      const choicesEl = document.getElementById("choices");
+      const endingEl = document.getElementById("ending");
+      const romanceEl = document.getElementById("romance");
+      const threatEl = document.getElementById("threat");
+      const mythEl = document.getElementById("myth");
+      const score = { romance: 0, threat: 0, myth: 0 };
+      let index = 0;
+      let live = false;
+      let awaiting = false;
+
+      function sync() {
+        romanceEl.textContent = score.romance;
+        threatEl.textContent = score.threat;
+        mythEl.textContent = score.myth;
+      }
+
+      function renderChoices(beat) {
+        choicesEl.innerHTML = "";
+        beat.options.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option.label;
+          button.onclick = () => {
+            if (!awaiting) return;
+            Object.entries(option.effect).forEach(([key, value]) => { score[key] += value; });
+            sync();
+            promptEl.textContent = `Locked cut thesis: ${option.label}`;
+            awaiting = false;
+            choicesEl.innerHTML = "";
+            video.play();
+          };
+          choicesEl.appendChild(button);
+        });
+      }
+
+      function finalEnding() {
+        if (score.romance >= score.threat && score.romance >= score.myth) return "Cut result: the same footage now sells a tragic romance.";
+        if (score.threat >= score.myth) return "Cut result: the footage now reads as an invasion thriller.";
+        return "Cut result: the footage now reads like mythic science fiction.";
+      }
+
+      document.getElementById("start").onclick = async () => {
+        score.romance = 0;
+        score.threat = 0;
+        score.myth = 0;
+        index = 0;
+        live = true;
+        awaiting = false;
+        endingEl.textContent = "";
+        choicesEl.innerHTML = "";
+        promptEl.textContent = "Building alternate genre...";
+        sync();
+        video.currentTime = 0;
+        await video.play().catch(() => {
+          live = false;
+          promptEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || awaiting || !beats[index]) return;
+        const beat = beats[index];
+        if (video.currentTime >= beat.time) {
+          awaiting = true;
+          video.pause();
+          promptEl.textContent = beat.prompt;
+          renderChoices(beat);
+          index += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        endingEl.textContent = finalEnding();
+      });
+
+      sync();
+    </script>
+  </body>
+  </html>

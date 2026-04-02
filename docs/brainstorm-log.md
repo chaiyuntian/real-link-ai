@@ -173,3 +173,41 @@ That means each mechanic should connect to at least one of:
 - ending generation tied to interpretation
 
 This is the point where the repo starts borrowing structure from interactive-fiction datasets and narrative video grounding work, instead of only remixing footage mechanically.
+
+## Indexed-video shift
+
+Another useful mental model is to stop treating video as only a timeline.
+
+- The same clip can be indexed by lens, claim, threat level, emotional reading, or memory confidence.
+- That turns the footage into a query surface: the player is no longer only reacting to playback, but searching an authored interpretation space.
+- This is especially strong for browser games because the index can be saved as JSON and used without runtime AI.
+
+## New conversion pass
+
+The next implementation wave should prove three things:
+
+1. Precise cut delivery can itself be a game loop.
+2. A trailer can be forcibly recut into a new genre by player choice.
+3. Indexed video can become a first-class mechanic instead of only a data format.
+
+## Selected platform wave
+
+19. Cutline Courier
+   - Video: Big Buck Bunny
+   - Core: deliver packets through exact cut windows
+
+22. False Trailer
+   - Video: Tears of Steel
+   - Core: reframe the same footage into romance, threat, or myth
+
+27. Archive Diver
+   - Video: Sintel
+   - Core: use an indexed interpretation layer to answer evidence-style queries
+
+## Fresh backlog refill
+
+After promoting `Cutline Courier`, `False Trailer`, and `Archive Diver` into playable pages, the next ideas queued for production are:
+
+- `Indexed Drift`: keep pushing indexed-video mechanics beyond evidence search
+- `Tempo Cartographer`: treat plot pressure as a remappable pulse map
+- `Clip Alibi`: argue innocence or guilt from the same disputed footage

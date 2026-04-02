@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 19 | Cutline Courier</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#eef9ff; background:linear-gradient(180deg,#08111d,#03070c 64%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:22px 0 42px; }
+      .grid { display:grid; grid-template-columns:1.45fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; border:1px solid rgba(141,219,255,.16); background:rgba(255,255,255,.05); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+      button { width:100%; margin-top:10px; border:0; border-radius:14px; padding:12px 14px; font:inherit; font-weight:700; cursor:pointer; background:#9adfff; color:#06111d; }
+      .action { background:#8effce; }
+      .copy, .small { color:#b6cfdd; line-height:1.55; }
+      .meter { height:14px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:12px; }
+      .fill { height:100%; width:0%; background:linear-gradient(90deg,#8effce,#9adfff); transition:width 70ms linear; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9adfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/big-buck-bunny-trailer.mov" preload="auto"></video>
+          <div class="meter"><div class="fill" id="fill"></div></div>
+          <div class="stats">
+            <div>Delivered<br /><strong id="score">0</strong></div>
+            <div>Chain<br /><strong id="chain">0</strong></div>
+            <div>Misses<br /><strong id="misses">0</strong></div>
+            <div>Next Cut<br /><strong id="nextCut">0.00</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h1>Cutline Courier</h1>
+          <p class="copy">You are not matching music. You are delivering meaning through exact edit windows. Hit the courier button when the trailer lands inside the next cut pocket.</p>
+          <p id="prompt" class="small">Load a route, then deliver on the cuts.</p>
+          <p id="ending" class="small"></p>
+          <button id="start">Start Route</button>
+          <button class="action" id="deliver">Deliver Packet</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const windows = [
+        { time: 1.65, width: 0.28, note: "open on first visual punctuation" },
+        { time: 3.02, width: 0.24, note: "land on escalation" },
+        { time: 4.85, width: 0.25, note: "deliver through chaos burst" },
+        { time: 6.34, width: 0.24, note: "thread the slapstick pivot" },
+        { time: 8.02, width: 0.32, note: "finish the route on the release cut" }
+      ];
+
+      const video = document.getElementById("video");
+      const fill = document.getElementById("fill");
+      const scoreEl = document.getElementById("score");
+      const chainEl = document.getElementById("chain");
+      const missesEl = document.getElementById("misses");
+      const nextCutEl = document.getElementById("nextCut");
+      const promptEl = document.getElementById("prompt");
+      const endingEl = document.getElementById("ending");
+
+      let index = 0;
+      let score = 0;
+      let chain = 0;
+      let misses = 0;
+      let live = false;
+
+      function sync() {
+        scoreEl.textContent = score;
+        chainEl.textContent = chain;
+        missesEl.textContent = misses;
+        nextCutEl.textContent = windows[index] ? windows[index].time.toFixed(2) : "--";
+      }
+
+      function finish() {
+        live = false;
+        if (score >= 4) endingEl.textContent = "Run result: the trailer stays coherent even under courier pressure.";
+        else if (score >= 2) endingEl.textContent = "Run result: partial delivery. Meaning survives, but some cuts arrive late.";
+        else endingEl.textContent = "Run result: the route collapses and the trailer feels mistimed.";
+      }
+
+      document.getElementById("start").onclick = async () => {
+        index = 0;
+        score = 0;
+        chain = 0;
+        misses = 0;
+        live = true;
+        endingEl.textContent = "";
+        promptEl.textContent = windows[0].note;
+        sync();
+        video.currentTime = 0;
+        await video.play().catch(() => {
+          promptEl.textContent = "Playback blocked. Click start again.";
+          live = false;
+        });
+      };
+
+      document.getElementById("deliver").onclick = () => {
+        if (!live || !windows[index]) return;
+        const target = windows[index];
+        const delta = Math.abs(video.currentTime - target.time);
+        if (delta <= target.width) {
+          score += 1;
+          chain += 1;
+          promptEl.textContent = `Delivered: ${target.note}`;
+        } else {
+          misses += 1;
+          chain = 0;
+          promptEl.textContent = `Missed window by ${delta.toFixed(2)}s`;
+        }
+        index += 1;
+        if (windows[index]) promptEl.textContent += ` Next: ${windows[index].note}.`;
+        sync();
+        if (!windows[index]) finish();
+      };
+
+      video.addEventListener("timeupdate", () => {
+        const duration = video.duration || 10;
+        fill.style.width = `${Math.min(100, (video.currentTime / duration) * 100)}%`;
+        if (!live || !windows[index]) return;
+        const target = windows[index];
+        if (video.currentTime > target.time + target.width) {
+          misses += 1;
+          chain = 0;
+          index += 1;
+          promptEl.textContent = target ? `Window expired: ${target.note}` : promptEl.textContent;
+          sync();
+          if (!windows[index]) finish();
+        }
+      });
+
+      video.addEventListener("ended", finish);
+      sync();
+    </script>
+  </body>
+  </html>
