@@ -51,3 +51,4 @@ All prototypes are standalone and can be launched from the repo root index page.
 - Issue #43 `Upload-to-Rhythm Templates` -> `tempo/tools/upload-rhythm-template/`
 - Issue #44 `Orbital Aegis` -> `tempo/gameplay/issue-044-orbital-aegis/`
 - Issue #45 `Wave Signal Surf` -> `tempo/gameplay/issue-045-wave-signal-surf/`
+- Issue #46 `Chorus Circuit` -> `tempo/gameplay/issue-046-chorus-circuit/`

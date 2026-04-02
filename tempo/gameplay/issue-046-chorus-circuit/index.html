@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 46 | Chorus Circuit</title>
+    <style>
+      :root {
+        --bg: #050913;
+        --panel: rgba(8, 14, 28, 0.84);
+        --line: rgba(126, 182, 255, 0.18);
+        --text: #eef7ff;
+        --muted: #abc3d8;
+        --accent: #8fe1ff;
+        --accent2: #8cffc4;
+        --warm: #ffbf7a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(143,225,255,.14), transparent 26%),
+          radial-gradient(circle at top right, rgba(255,191,122,.12), transparent 28%),
+          linear-gradient(180deg, #03060c, #08121f 58%, #03060c 100%);
+      }
+      main { width:min(1320px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.55fr 1fr; gap:18px; }
+      .panel {
+        padding:18px;
+        border-radius:24px;
+        border:1px solid var(--line);
+        background:var(--panel);
+        box-shadow:0 18px 60px rgba(0,0,0,.24);
+      }
+      canvas {
+        width:100%;
+        height:560px;
+        display:block;
+        border-radius:22px;
+        background:
+          radial-gradient(circle at center, rgba(143,225,255,.08), transparent 22%),
+          linear-gradient(180deg, rgba(6,12,22,.96), rgba(3,8,16,.98));
+      }
+      .hud { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:12px; }
+      .stat { padding:12px; border-radius:16px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:26px; }
+      .small { color:var(--muted); line-height:1.65; }
+      .meter { height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); margin-top:8px; }
+      .meter span { display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent),var(--warm)); }
+      button {
+        width:100%;
+        margin-top:10px;
+        border:0;
+        border-radius:16px;
+        padding:13px 14px;
+        font:inherit;
+        font-weight:700;
+        cursor:pointer;
+        color:#06111d;
+        background:linear-gradient(135deg,#9ce7ff,#ddf6ff);
+      }
+      a { color:#8fe1ff; }
+      @media (max-width:960px) {
+        .grid { grid-template-columns:1fr; }
+        .hud { grid-template-columns:repeat(2,1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <canvas id="board" width="960" height="560"></canvas>
+          <div class="hud">
+            <div class="stat">Score<strong id="score">0</strong></div>
+            <div class="stat">Combo<strong id="combo">0</strong></div>
+            <div class="stat">Nodes<strong id="nodes">0</strong></div>
+            <div class="stat">Leaks<strong id="leaks">0</strong></div>
+            <div class="stat">Power<strong id="power">100</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <p><a href="../../index.html">Back to tempo</a></p>
+          <h1 style="margin:0 0 10px;">Chorus Circuit</h1>
+          <p class="small">A ruined chorus grid has to be rewired on-beat. Move with `WASD` or arrow keys, reach the lit relay before its beat lands, and keep the power web from leaking out. The song changes the routing tempo section by section.</p>
+          <p class="small" id="section">Load circuit score.</p>
+          <div class="small">Grid power</div>
+          <div class="meter"><span id="powerMeter"></span></div>
+          <p class="small" id="ending"></p>
+          <button id="start">Start Circuit</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const canvas = document.getElementById("board");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const nodesEl = document.getElementById("nodes");
+      const leaksEl = document.getElementById("leaks");
+      const powerEl = document.getElementById("power");
+      const powerMeter = document.getElementById("powerMeter");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+
+      const audio = new Audio("/tempo-audio/tempo/chorus-circuit.wav");
+      audio.crossOrigin = "anonymous";
+
+      const board = { x: 120, y: 70, w: 720, h: 420, cols: 5, rows: 3 };
+      const state = {
+        analysis: null,
+        relays: [],
+        particles: [],
+        score: 0,
+        combo: 0,
+        nodes: 0,
+        leaks: 0,
+        power: 100,
+        live: false,
+        player: { gx: 2, gy: 1, x: 0, y: 0 },
+        keys: new Set()
+      };
+
+      function cellCenter(col, row) {
+        return {
+          x: board.x + ((col + 0.5) * board.w) / board.cols,
+          y: board.y + ((row + 0.5) * board.h) / board.rows
+        };
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function syncHud() {
+        scoreEl.textContent = state.score;
+        comboEl.textContent = state.combo;
+        nodesEl.textContent = state.nodes;
+        leaksEl.textContent = state.leaks;
+        powerEl.textContent = Math.round(state.power);
+        powerMeter.style.width = `${state.power}%`;
+      }
+
+      function sectionForTime(time) {
+        if (!state.analysis) return null;
+        return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
+      }
+
+      function addBurst(x, y, color) {
+        for (let i = 0; i < 12; i += 1) {
+          const angle = (Math.PI * 2 * i) / 12;
+          state.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * (1.6 + Math.random() * 2.2),
+            vy: Math.sin(angle) * (1.6 + Math.random() * 2.2),
+            life: 1,
+            color
+          });
+        }
+      }
+
+      function createRelays() {
+        const beats = state.analysis.beats.filter((_, index) => index % 2 === 0);
+        state.relays = beats.map((beat, index) => {
+          const section = sectionForTime(beat);
+          const laneShift = section.label === "drop" ? 2 : section.label === "lift" ? 1 : 0;
+          const col = (index + laneShift) % board.cols;
+          const row = ((Math.floor(index / 2) + laneShift) % board.rows);
+          return {
+            beat,
+            col,
+            row,
+            chain: section.label !== "intro" && index % 3 === 0,
+            hit: false,
+            missed: false
+          };
+        });
+      }
+
+      async function init() {
+        if (state.analysis) return;
+        const response = await fetch("../../analysis/chorus-circuit-analysis.json");
+        state.analysis = await response.json();
+        createRelays();
+        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. Chorus network loaded with ${state.relays.length} relay opportunities.`;
+      }
+
+      function finish() {
+        state.live = false;
+        if (state.power <= 0) {
+          endingEl.textContent = "Result: the chorus network blacked out before the final handoff locked in.";
+        } else if (state.nodes >= 18 && state.combo >= 6) {
+          endingEl.textContent = "Result: premium restore. The whole chorus grid reconnects and sings at full voltage.";
+        } else if (state.nodes >= 11) {
+          endingEl.textContent = "Result: partial restore. Most relay towers come back, but there are still dead districts.";
+        } else {
+          endingEl.textContent = "Result: too many leaks. The circuit never reaches stable harmonic flow.";
+        }
+      }
+
+      function resetRun() {
+        state.score = 0;
+        state.combo = 0;
+        state.nodes = 0;
+        state.leaks = 0;
+        state.power = 100;
+        state.player.gx = 2;
+        state.player.gy = 1;
+        state.particles = [];
+        endingEl.textContent = "";
+        createRelays();
+        syncHud();
+      }
+
+      document.getElementById("start").onclick = async () => {
+        await init();
+        resetRun();
+        audio.currentTime = 0;
+        state.live = true;
+        await audio.play().catch(() => {
+          state.live = false;
+          sectionEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      window.addEventListener("keydown", (event) => {
+        if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD"].includes(event.code)) {
+          state.keys.add(event.code);
+        }
+      });
+
+      window.addEventListener("keyup", (event) => {
+        state.keys.delete(event.code);
+      });
+
+      audio.addEventListener("ended", finish);
+
+      function updatePlayer() {
+        if (state.keys.has("ArrowLeft") || state.keys.has("KeyA")) state.player.gx -= 1;
+        if (state.keys.has("ArrowRight") || state.keys.has("KeyD")) state.player.gx += 1;
+        if (state.keys.has("ArrowUp") || state.keys.has("KeyW")) state.player.gy -= 1;
+        if (state.keys.has("ArrowDown") || state.keys.has("KeyS")) state.player.gy += 1;
+        state.player.gx = clamp(state.player.gx, 0, board.cols - 1);
+        state.player.gy = clamp(state.player.gy, 0, board.rows - 1);
+        state.keys.clear();
+
+        const target = cellCenter(state.player.gx, state.player.gy);
+        state.player.x += (target.x - state.player.x) * 0.22;
+        state.player.y += (target.y - state.player.y) * 0.22;
+      }
+
+      function updateRelays(now) {
+        const section = sectionForTime(now);
+        if (section) {
+          sectionEl.textContent = `${section.label.toUpperCase()} routing | move to the glowing relay before the beat lands | ${now.toFixed(2)}s`;
+        }
+
+        state.relays.forEach((relay) => {
+          if (relay.hit || relay.missed) return;
+          const delta = relay.beat - now;
+          const playerCellMatch = relay.col === state.player.gx && relay.row === state.player.gy;
+          if (delta <= 0.18 && delta >= -0.05 && playerCellMatch) {
+            relay.hit = true;
+            state.nodes += 1;
+            state.combo += 1;
+            state.score += relay.chain ? 180 : 110;
+            state.power = clamp(state.power + (relay.chain ? 5 : 3), 0, 100);
+            const c = cellCenter(relay.col, relay.row);
+            addBurst(c.x, c.y, relay.chain ? "#ffbf7a" : "#8fe1ff");
+            syncHud();
+          } else if (delta < -0.18) {
+            relay.missed = true;
+            state.combo = 0;
+            state.leaks += 1;
+            state.power = clamp(state.power - 11, 0, 100);
+            syncHud();
+          }
+        });
+
+        if (state.power <= 0) finish();
+      }
+
+      function draw(now) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#07101e";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const section = sectionForTime(now);
+        const activeColor = section?.label === "drop" ? "#ffbf7a" : section?.label === "lift" ? "#8fe1ff" : "#8cffc4";
+
+        ctx.strokeStyle = "rgba(143,225,255,.08)";
+        ctx.lineWidth = 2;
+        for (let c = 0; c <= board.cols; c += 1) {
+          const x = board.x + (c * board.w) / board.cols;
+          ctx.beginPath();
+          ctx.moveTo(x, board.y);
+          ctx.lineTo(x, board.y + board.h);
+          ctx.stroke();
+        }
+        for (let r = 0; r <= board.rows; r += 1) {
+          const y = board.y + (r * board.h) / board.rows;
+          ctx.beginPath();
+          ctx.moveTo(board.x, y);
+          ctx.lineTo(board.x + board.w, y);
+          ctx.stroke();
+        }
+
+        state.relays.forEach((relay) => {
+          const delta = relay.beat - now;
+          if (delta < -0.8 || delta > 3.6 || relay.hit) return;
+          const { x, y } = cellCenter(relay.col, relay.row);
+          const radius = 18 + (1 - clamp(delta / 3.6, 0, 1)) * 24;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = relay.chain ? "rgba(255,191,122,.8)" : "rgba(143,225,255,.82)";
+          ctx.lineWidth = relay.chain ? 5 : 3;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(x, y, 16, 0, Math.PI * 2);
+          ctx.fillStyle = relay.chain ? "#ffbf7a" : activeColor;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(state.player.x, state.player.y);
+          ctx.lineTo(x, y);
+          ctx.strokeStyle = `rgba(143,225,255,${0.08 + (1 - clamp(delta / 3.6, 0, 1)) * 0.12})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+
+        ctx.fillStyle = "#8cffc4";
+        ctx.beginPath();
+        ctx.arc(state.player.x || cellCenter(2,1).x, state.player.y || cellCenter(2,1).y, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(143,225,255,.8)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(state.player.x || cellCenter(2,1).x, state.player.y || cellCenter(2,1).y, 30 + Math.sin(now * 4) * 4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        state.particles = state.particles.filter((particle) => particle.life > 0.03);
+        state.particles.forEach((particle) => {
+          particle.x += particle.vx;
+          particle.y += particle.vy;
+          particle.vx *= 0.97;
+          particle.vy *= 0.97;
+          particle.life *= 0.93;
+          ctx.globalAlpha = particle.life;
+          ctx.fillStyle = particle.color;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, 4 + (1 - particle.life) * 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+
+        ctx.fillStyle = "#eef7ff";
+        ctx.font = "600 18px Avenir Next";
+        ctx.fillText("Broken districts", 120, 34);
+        ctx.fillText("Reconnected chorus grid", 650, 34);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const now = state.live ? audio.currentTime : 0;
+        if (!state.player.x) {
+          const start = cellCenter(2, 1);
+          state.player.x = start.x;
+          state.player.y = start.y;
+        }
+        if (state.live) {
+          updatePlayer();
+          updateRelays(now);
+        }
+        draw(now);
+      }
+
+      syncHud();
+      animate();
+    </script>
+  </body>
+  </html>
