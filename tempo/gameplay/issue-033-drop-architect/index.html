@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 33 | Drop Architect</title>
+    <style>
+      :root {
+        --bg: #05070c;
+        --panel: rgba(6, 12, 20, 0.88);
+        --line: rgba(144, 220, 255, 0.16);
+        --text: #eef8ff;
+        --muted: #abc7d9;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(151,222,255,.18), transparent 28%),
+          radial-gradient(circle at top right, rgba(255,178,111,.16), transparent 34%),
+          linear-gradient(180deg, #03060a, #08121b 60%, #04060b 100%);
+      }
+      main { width:min(1220px, calc(100% - 28px)); margin:0 auto; padding:22px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.45fr 1fr; gap:18px; }
+      .panel {
+        padding:16px;
+        border-radius:20px;
+        border:1px solid var(--line);
+        background: var(--panel);
+      }
+      canvas {
+        width:100%;
+        height:520px;
+        display:block;
+        border-radius:18px;
+        background:
+          radial-gradient(circle at center, rgba(151,222,255,.08), transparent 26%),
+          linear-gradient(180deg, rgba(8,15,24,.95), rgba(5,8,14,.98));
+      }
+      .hud { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+      .stat { padding:12px; border-radius:14px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:4px; font-size:26px; }
+      .small { color: var(--muted); line-height: 1.6; }
+      button {
+        width:100%;
+        margin-top:10px;
+        border:0;
+        border-radius:14px;
+        padding:12px 14px;
+        font:inherit;
+        font-weight:700;
+        cursor:pointer;
+        background:#97deff;
+        color:#06121d;
+      }
+      a { color:#97deff; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <canvas id="stage" width="900" height="520"></canvas>
+          <div class="hud">
+            <div class="stat">Score<strong id="score">0</strong></div>
+            <div class="stat">Built<strong id="built">0</strong></div>
+            <div class="stat">Breaks<strong id="breaks">0</strong></div>
+            <div class="stat">Section<strong id="phase">--</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <p><a href="../../index.html">Back to tempo</a></p>
+          <h1>Drop Architect</h1>
+          <p class="small">The song sections are structural phases. Hit `A`, `S`, `D` to lock the correct build piece before each phase shift lands. Intro builds the base, lift raises the frame, drop seals the structure.</p>
+          <p class="small" id="section">Load section score.</p>
+          <p class="small" id="ending"></p>
+          <button id="start">Start Build</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const canvas = document.getElementById("stage");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const builtEl = document.getElementById("built");
+      const breaksEl = document.getElementById("breaks");
+      const phaseEl = document.getElementById("phase");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+      const audio = new Audio("https://videos-batch1.real-link.ai/tempo/tempo-batch1.wav");
+      audio.crossOrigin = "anonymous";
+
+      const state = {
+        analysis: null,
+        checkpoints: [],
+        score: 0,
+        built: 0,
+        breaks: 0,
+        live: false,
+        activePiece: 0
+      };
+
+      const pieceKeys = ["KeyA", "KeyS", "KeyD"];
+      const pieceNames = ["base", "frame", "crown"];
+
+      function sync() {
+        scoreEl.textContent = state.score;
+        builtEl.textContent = state.built;
+        breaksEl.textContent = state.breaks;
+        const current = currentSection(audio.currentTime);
+        phaseEl.textContent = current ? current.label : "--";
+      }
+
+      function currentSection(time) {
+        if (!state.analysis) return null;
+        return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
+      }
+
+      function buildCheckpoints() {
+        const sections = state.analysis.sections;
+        state.checkpoints = sections.map((section, index) => ({
+          time: section.start + Math.max(0.6, (section.end - section.start) * 0.5),
+          section: section.label,
+          requiredPiece: Math.min(index, pieceNames.length - 1),
+          resolved: false
+        }));
+      }
+
+      async function init() {
+        const response = await fetch("../../analysis/tempo-batch1-analysis.json");
+        state.analysis = await response.json();
+        buildCheckpoints();
+        sectionEl.textContent = `Loaded ${state.analysis.sections.length} section phases from the track analysis.`;
+      }
+
+      function finish() {
+        state.live = false;
+        if (state.score >= 3) endingEl.textContent = "Architect result: the whole structure survives the drop.";
+        else if (state.score >= 2) endingEl.textContent = "Architect result: the structure stands, but it carries visible fractures.";
+        else endingEl.textContent = "Architect result: the build collapses before the final phase seals.";
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!state.analysis) await init();
+        state.score = 0;
+        state.built = 0;
+        state.breaks = 0;
+        state.activePiece = 0;
+        endingEl.textContent = "";
+        buildCheckpoints();
+        sync();
+        audio.currentTime = 0;
+        state.live = true;
+        await audio.play().catch(() => {
+          state.live = false;
+          sectionEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      window.addEventListener("keydown", (event) => {
+        const piece = pieceKeys.indexOf(event.code);
+        if (piece !== -1) state.activePiece = piece;
+      });
+
+      audio.addEventListener("timeupdate", () => {
+        if (!state.live) return;
+        const now = audio.currentTime;
+        const phase = currentSection(now);
+        if (phase) sectionEl.textContent = `${phase.label.toUpperCase()} phase | piece armed: ${pieceNames[state.activePiece]}`;
+        state.checkpoints.forEach((checkpoint) => {
+          if (checkpoint.resolved || now < checkpoint.time) return;
+          checkpoint.resolved = true;
+          if (state.activePiece === checkpoint.requiredPiece) {
+            state.score += 1;
+            state.built += 1;
+          } else {
+            state.breaks += 1;
+          }
+          sync();
+        });
+      });
+
+      audio.addEventListener("ended", finish);
+
+      function drawStructure(time) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgba(8,13,20,.96)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const section = currentSection(time);
+        const glow = section?.label === "drop" ? "#ffb26f" : section?.label === "lift" ? "#97deff" : "#86ffd3";
+        ctx.strokeStyle = glow;
+        ctx.lineWidth = 6;
+
+        if (state.built >= 1) {
+          ctx.strokeRect(270, 360, 360, 80);
+        }
+        if (state.built >= 2) {
+          ctx.beginPath();
+          ctx.moveTo(320, 360);
+          ctx.lineTo(320, 220);
+          ctx.moveTo(580, 360);
+          ctx.lineTo(580, 220);
+          ctx.stroke();
+        }
+        if (state.built >= 3) {
+          ctx.beginPath();
+          ctx.moveTo(320, 220);
+          ctx.lineTo(450, 130);
+          ctx.lineTo(580, 220);
+          ctx.stroke();
+        }
+
+        if (state.breaks > 0) {
+          ctx.strokeStyle = "rgba(255,120,120,.8)";
+          ctx.lineWidth = 3;
+          for (let i = 0; i < state.breaks; i += 1) {
+            ctx.beginPath();
+            ctx.moveTo(350 + i * 60, 300);
+            ctx.lineTo(380 + i * 60, 340);
+            ctx.stroke();
+          }
+        }
+
+        ctx.fillStyle = glow;
+        ctx.font = "18px Avenir Next";
+        ctx.fillText(`Armed piece: ${pieceNames[state.activePiece]}`, 28, 42);
+        ctx.fillText("A = base, S = frame, D = crown", 28, 70);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        drawStructure(state.live ? audio.currentTime : 0);
+      }
+
+      animate();
+      sync();
+    </script>
+  </body>
+  </html>

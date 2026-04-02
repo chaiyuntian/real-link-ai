@@ -53,3 +53,4 @@ The current template tool now supports:
 - multiple templates
 - difficulty-based note thinning and strike windows
 - browser-local analysis and export
+- preset export for reuse or later publishing

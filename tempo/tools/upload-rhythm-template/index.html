@@ -206,6 +206,7 @@
             <button id="analyze">Analyze Song</button>
             <button id="start" class="secondary" disabled>Start Template</button>
             <button id="export" class="warn" disabled>Export JSON</button>
+            <button id="exportPreset" disabled>Export Preset</button>
           </div>
 
           <div class="stats">
@@ -250,6 +251,7 @@
       const analyzeButton = document.getElementById("analyze");
       const startButton = document.getElementById("start");
       const exportButton = document.getElementById("export");
+      const exportPresetButton = document.getElementById("exportPreset");
       const timelineEl = document.getElementById("timeline");
       const previewEl = document.getElementById("preview");
       const outputEl = document.getElementById("output");
@@ -512,6 +514,7 @@
           syncSummary();
           startButton.disabled = false;
           exportButton.disabled = false;
+          exportPresetButton.disabled = false;
           statusEl.textContent = "Analysis complete. Start the template or export the JSON.";
           resultEl.textContent = `${templateEl.options[templateEl.selectedIndex].text} generated with ${state.templateData.notes.length} playable notes.`;
         } catch (error) {
@@ -583,6 +586,23 @@
         const a = document.createElement("a");
         a.href = url;
         a.download = "rhythm-template-analysis.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      exportPresetButton.onclick = () => {
+        const preset = {
+          title: fileEl.files?.[0]?.name || "uploaded-track",
+          createdAt: new Date().toISOString(),
+          gameplayPath: `/tempo/tools/upload-rhythm-template/`,
+          template: state.templateData,
+          analysis: state.analysis
+        };
+        const blob = new Blob([JSON.stringify(preset, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "rhythm-template-preset.json";
         a.click();
         URL.revokeObjectURL(url);
       };

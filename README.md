@@ -115,6 +115,7 @@ After that, every push to `main` will:
 - `tempo/`: static pages and analysis artifacts for the tempo domain
   includes browser-side upload-and-template tooling for local songs
   and multiple playable music games
+  plus exportable gameplay presets
 - `indexed-video/`: authored indexed-video payloads that turn one clip into a queryable game space
 - `narrative/story-beats/`: time-aligned story state data used by narrative-heavy prototypes
 - `analysis/`: offline AI-generated video understanding artifacts
