@@ -95,7 +95,7 @@
         background: linear-gradient(90deg, rgba(134,255,211,.4), rgba(151,222,255,1), rgba(255,178,111,.4));
         box-shadow: 0 0 18px rgba(151,222,255,.45);
       }
-      .note, .burst, .garden-seed {
+      .note, .burst, .garden-seed, .orbital-note, .orbital-core, .orbital-arc {
         position:absolute;
         transform: translate(-50%, -50%);
       }
@@ -119,6 +119,33 @@
         border-radius: 50%;
         border: 3px solid #86ffd3;
         box-shadow: 0 0 28px rgba(134,255,211,.22);
+      }
+      .orbital-core {
+        left: 50%;
+        top: 50%;
+        width: 74px;
+        height: 74px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(151,222,255,1) 0%, rgba(134,255,211,.6) 45%, rgba(151,222,255,.1) 100%);
+        box-shadow: 0 0 40px rgba(151,222,255,.35);
+      }
+      .orbital-arc {
+        left: 50%;
+        top: 50%;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        border: 12px solid transparent;
+        border-top-color: #97deff;
+        border-right-color: rgba(134,255,211,.9);
+        filter: drop-shadow(0 0 18px rgba(151,222,255,.35));
+      }
+      .orbital-note {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ffb26f 0%, #97deff 68%, rgba(151,222,255,.12) 100%);
+        box-shadow: 0 0 18px rgba(255,178,111,.35);
       }
       .story-card {
         position:absolute;
@@ -190,6 +217,7 @@
                 <option value="burst">Burst Gates</option>
                 <option value="story">Story Pulse</option>
                 <option value="garden">Signal Garden</option>
+                <option value="orbital">Orbital Aegis</option>
               </select>
             </div>
             <div style="flex:1 1 180px">
@@ -238,6 +266,7 @@
             <span class="pill">Burst Gates: cluster-based burst timing</span>
             <span class="pill">Story Pulse: section beats become narrative prompts</span>
             <span class="pill">Signal Garden: blooms grow out of clustered beat pockets</span>
+            <span class="pill">Orbital Aegis: rotate a defense arc and parry inbound beats on a ring</span>
           </div>
           <p class="small">Exported JSON contains beat times, section estimates, difficulty settings, and template-specific note placements.</p>
           <textarea id="output" spellcheck="false"></textarea>
@@ -391,17 +420,21 @@
           if (template === "story") return index % (difficulty === "hard" ? 2 : 3) === 0;
           if (template === "burst") return index % (difficulty === "easy" ? 3 : 2) === 0;
           if (template === "garden") return index % (difficulty === "hard" ? 1 : 2) === 0;
+          if (template === "orbital") return index % (difficulty === "easy" ? 2 : 1) === 0;
           return index % filterEvery === 0;
         });
 
         const notes = sourceBeats.map((beat, index) => ({
           beat,
           lane: template === "burst" ? Math.floor(index / 2) % 4 : index % 4,
+          angle: template === "orbital" ? Number((((index * 0.86) % (Math.PI * 2)) - Math.PI).toFixed(4)) : null,
           prompt:
             template === "story"
               ? `${analysis.sections.find((section) => beat >= section.start && beat < section.end)?.label || "phase"} cue`
               : template === "garden"
                 ? `bloom seed ${index + 1}`
+                : template === "orbital"
+                  ? `${analysis.sections.find((section) => beat >= section.start && beat < section.end)?.label || "phase"} parry`
                 : null
         }));
 
@@ -432,13 +465,24 @@
       }
 
       function clearPreview() {
-        Array.from(previewEl.querySelectorAll(".note,.burst,.garden-seed,.story-card")).forEach((node) => node.remove());
+        Array.from(previewEl.querySelectorAll(".note,.burst,.garden-seed,.story-card,.orbital-note,.orbital-core,.orbital-arc")).forEach((node) => node.remove());
       }
 
       function renderPreview(currentTime = 0) {
         clearPreview();
         if (!state.templateData || !state.analysis) return;
         const height = 330;
+
+        if (state.templateData.template === "orbital") {
+          const core = document.createElement("div");
+          core.className = "orbital-core";
+          previewEl.appendChild(core);
+          const arc = document.createElement("div");
+          arc.className = "orbital-arc";
+          arc.style.transform = `translate(-50%, -50%) rotate(${(currentTime * 90) % 360}deg)`;
+          previewEl.appendChild(arc);
+        }
+
         state.templateData.notes.forEach((note, index) => {
           const delta = note.beat - currentTime;
           if (delta < -0.6 || delta > 5) return;
@@ -468,6 +512,18 @@
             seed.style.left = `${laneCenters[note.lane]}%`;
             seed.style.top = `${Math.max(18, top - (index % 5) * 8)}px`;
             previewEl.appendChild(seed);
+            return;
+          }
+
+          if (state.templateData.template === "orbital") {
+            const orbital = document.createElement("div");
+            orbital.className = "orbital-note";
+            const orbitRadius = 118 - (delta * 16);
+            const left = 50 + (Math.cos(note.angle) * orbitRadius / 3.1);
+            const vertical = 50 + (Math.sin(note.angle) * orbitRadius / 3.2);
+            orbital.style.left = `${left}%`;
+            orbital.style.top = `${vertical}%`;
+            previewEl.appendChild(orbital);
             return;
           }
 
@@ -558,7 +614,9 @@
           note.hit = false;
           note.missed = false;
         });
-        resultEl.textContent = "Template live. Use `D`, `F`, `J`, `K` to hit lanes 1-4.";
+        resultEl.textContent = state.templateData.template === "orbital"
+          ? "Template live. Use `A` / `D` to rotate and `Space` to parry the ring."
+          : "Template live. Use `D`, `F`, `J`, `K` to hit lanes 1-4.";
 
         state.audio.addEventListener("timeupdate", () => {
           if (!state.live) return;
@@ -609,6 +667,12 @@
 
       window.addEventListener("keydown", (event) => {
         if (!state.live || !state.audio || !state.templateData) return;
+        if (state.templateData.template === "orbital") {
+          if (event.code === "KeyA") resultEl.textContent = "Guard rotating left.";
+          if (event.code === "KeyD") resultEl.textContent = "Guard rotating right.";
+          if (event.code === "Space") resultEl.textContent = "Parry timing is template-preview only in this studio.";
+          return;
+        }
         const lane = laneKeys.indexOf(event.code);
         if (lane === -1) return;
         const now = state.audio.currentTime;

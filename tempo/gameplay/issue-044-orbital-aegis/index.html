@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 44 | Orbital Aegis</title>
+    <style>
+      :root {
+        --bg: #04070d;
+        --panel: rgba(7, 12, 22, 0.82);
+        --line: rgba(117, 194, 255, 0.22);
+        --text: #eef8ff;
+        --muted: #a9c6da;
+        --accent: #86ffd3;
+        --accent2: #ffb26f;
+        --danger: #ff6c8a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        overflow: hidden;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(134,255,211,.1), transparent 24%),
+          radial-gradient(circle at top right, rgba(255,178,111,.12), transparent 28%),
+          linear-gradient(180deg, #03050a, #07111b 55%, #03050a 100%);
+      }
+      canvas { display: block; }
+      .hud, .panel {
+        position: fixed;
+        z-index: 2;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+      }
+      .hud {
+        left: 16px;
+        right: 16px;
+        top: 16px;
+        border-radius: 20px;
+        padding: 14px 16px;
+        display: grid;
+        grid-template-columns: 2fr repeat(5, 1fr);
+        gap: 12px;
+      }
+      .panel {
+        right: 16px;
+        bottom: 16px;
+        width: min(420px, calc(100% - 32px));
+        border-radius: 20px;
+        padding: 16px;
+      }
+      strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 28px;
+      }
+      .small {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      button, select {
+        width: 100%;
+        margin-top: 10px;
+        border: 0;
+        border-radius: 14px;
+        padding: 12px 14px;
+        font: inherit;
+      }
+      button {
+        font-weight: 700;
+        cursor: pointer;
+        background: #97deff;
+        color: #07111d;
+      }
+      select {
+        color: inherit;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.12);
+      }
+      a { color: #97deff; }
+      .meter {
+        margin-top: 10px;
+        height: 12px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255,255,255,.06);
+      }
+      .meter > span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), #97deff, var(--accent2));
+      }
+      @media (max-width: 980px) {
+        .hud { grid-template-columns: 1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hud">
+      <div>
+        <div>Orbital Aegis</div>
+        <div class="small" id="section">Load the beat graph and start the defense run.</div>
+      </div>
+      <div>Score<strong id="score">0</strong></div>
+      <div>Combo<strong id="combo">0</strong></div>
+      <div>Core HP<strong id="health">100</strong></div>
+      <div>Parries<strong id="parries">0</strong></div>
+      <div>Blooms<strong id="blooms">0</strong></div>
+    </div>
+
+    <div class="panel">
+      <p><a href="../../index.html">Back to tempo</a></p>
+      <p class="small">`A` / `D` or arrow keys rotate the aegis. Press `Space` exactly when threats touch the teal guard ring. Intro teaches single shards, lift adds mirrored pressure, drop introduces bloom units that split into multi-angle follow-ups.</p>
+      <label class="small" for="difficulty">Difficulty</label>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+      <div class="small" style="margin-top:10px;">Sync confidence</div>
+      <div class="meter"><span id="syncMeter"></span></div>
+      <p class="small" id="ending"></p>
+      <button id="start">Start Defense</button>
+    </div>
+
+    <canvas id="scene"></canvas>
+
+    <script>
+      const analysisUrl = "../../analysis/tempo-batch1-analysis.json";
+      const audio = new Audio("/tempo-audio/tempo/tempo-batch1.wav");
+      audio.crossOrigin = "anonymous";
+
+      const canvas = document.getElementById("scene");
+      const ctx = canvas.getContext("2d");
+      const startButton = document.getElementById("start");
+      const difficultyEl = document.getElementById("difficulty");
+      const sectionEl = document.getElementById("section");
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const healthEl = document.getElementById("health");
+      const parriesEl = document.getElementById("parries");
+      const bloomsEl = document.getElementById("blooms");
+      const endingEl = document.getElementById("ending");
+      const syncMeterEl = document.getElementById("syncMeter");
+
+      const guardianCore = new Image();
+      guardianCore.src = "../../assets/orbital-aegis/guardian-core.png";
+      const tempoShard = new Image();
+      tempoShard.src = "../../assets/orbital-aegis/tempo-shard.png";
+      const bassBloom = new Image();
+      bassBloom.src = "../../assets/orbital-aegis/bass-bloom.png";
+
+      const state = {
+        analysis: null,
+        live: false,
+        enemies: [],
+        ripples: [],
+        stars: [],
+        score: 0,
+        combo: 0,
+        health: 100,
+        parries: 0,
+        bloomsDefused: 0,
+        guardAngle: -Math.PI / 2,
+        guardWidth: Math.PI / 3,
+        travelTime: 2.2,
+        parryWindow: 0.16,
+        perfectWindow: 0.075
+      };
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      function randomBetween(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function initStars() {
+        state.stars = Array.from({ length: 90 }, () => ({
+          x: Math.random(),
+          y: Math.random(),
+          r: randomBetween(0.8, 2.4),
+          speed: randomBetween(0.0004, 0.0014)
+        }));
+      }
+
+      function syncHud() {
+        scoreEl.textContent = state.score;
+        comboEl.textContent = state.combo;
+        healthEl.textContent = Math.max(0, Math.round(state.health));
+        parriesEl.textContent = state.parries;
+        bloomsEl.textContent = state.bloomsDefused;
+      }
+
+      function normalizeAngle(angle) {
+        while (angle <= -Math.PI) angle += Math.PI * 2;
+        while (angle > Math.PI) angle -= Math.PI * 2;
+        return angle;
+      }
+
+      function angleDistance(a, b) {
+        return Math.abs(normalizeAngle(a - b));
+      }
+
+      function sectionForTime(time) {
+        return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
+      }
+
+      function buildEnemies() {
+        const difficulty = difficultyEl.value;
+        const densityStep = difficulty === "easy" ? 2 : 1;
+        state.enemies = [];
+
+        state.analysis.beats.forEach((beat, index) => {
+          if (index % densityStep !== 0) return;
+          const section = sectionForTime(beat);
+          const baseAngle = ((index * 0.78) + (section.label === "drop" ? index * 0.23 : 0)) % (Math.PI * 2);
+          const angle = baseAngle - Math.PI;
+
+          state.enemies.push({
+            id: `shard-${index}`,
+            type: "shard",
+            angle,
+            beat,
+            hit: false,
+            missed: false,
+            splitFromBloom: false
+          });
+
+          if (section.label === "lift" && index % 4 === 0) {
+            state.enemies.push({
+              id: `lift-pair-${index}`,
+              type: "shard",
+              angle: normalizeAngle(angle + Math.PI * 0.62),
+              beat: Number((beat + 0.17).toFixed(3)),
+              hit: false,
+              missed: false,
+              splitFromBloom: false
+            });
+          }
+
+          if (section.label === "drop" && index % 5 === 0) {
+            state.enemies.push({
+              id: `bloom-${index}`,
+              type: "bloom",
+              angle: normalizeAngle(angle + Math.PI * 0.14),
+              beat: Number((beat + 0.03).toFixed(3)),
+              hit: false,
+              missed: false,
+              splitFromBloom: false,
+              bloomOpened: false
+            });
+          }
+        });
+
+        state.enemies.sort((a, b) => a.beat - b.beat);
+      }
+
+      function spawnSplitShards(parent) {
+        const spread = [-(Math.PI / 7), Math.PI / 7];
+        spread.forEach((offset, index) => {
+          state.enemies.push({
+            id: `${parent.id}-split-${index}`,
+            type: "shard",
+            angle: normalizeAngle(parent.angle + offset),
+            beat: Number((parent.beat + 0.34 + (index * 0.06)).toFixed(3)),
+            hit: false,
+            missed: false,
+            splitFromBloom: true
+          });
+        });
+        state.enemies.sort((a, b) => a.beat - b.beat);
+      }
+
+      function createRipple(color) {
+        state.ripples.push({
+          radius: 126,
+          alpha: 0.9,
+          color
+        });
+      }
+
+      function getEnemyRadius(enemy, now) {
+        const start = enemy.beat - state.travelTime;
+        const progress = Math.min(1, Math.max(0, (now - start) / state.travelTime));
+        return lerp(330, 120, progress);
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function tryParry() {
+        if (!state.live) return;
+        const now = audio.currentTime;
+        const candidates = state.enemies
+          .filter((enemy) => !enemy.hit && !enemy.missed)
+          .map((enemy) => ({
+            enemy,
+            beatDelta: Math.abs(enemy.beat - now),
+            angleDelta: angleDistance(enemy.angle, state.guardAngle)
+          }))
+          .filter(({ beatDelta, angleDelta }) => beatDelta <= state.parryWindow && angleDelta <= state.guardWidth * 0.65)
+          .sort((a, b) => (a.beatDelta + a.angleDelta) - (b.beatDelta + b.angleDelta));
+
+        if (!candidates.length) {
+          state.combo = 0;
+          state.health = Math.max(0, state.health - 4);
+          createRipple("255,108,138");
+          syncHud();
+          return;
+        }
+
+        const target = candidates[0];
+        const { enemy, beatDelta } = target;
+        enemy.hit = true;
+        const perfect = beatDelta <= state.perfectWindow;
+        state.parries += 1;
+        state.combo += 1;
+        state.score += perfect ? 140 : 90;
+        if (enemy.type === "bloom") {
+          state.bloomsDefused += 1;
+          state.score += 110;
+          spawnSplitShards(enemy);
+        }
+        createRipple(perfect ? "134,255,211" : "151,222,255");
+        syncMeterEl.style.width = `${Math.min(100, (state.combo / 20) * 100)}%`;
+        sectionEl.textContent = perfect
+          ? `Perfect parry on ${enemy.type}.`
+          : `Guard held. ${enemy.type === "bloom" ? "Bloom split into follow-up shards." : "Shard deflected."}`;
+        syncHud();
+      }
+
+      function finishRun() {
+        state.live = false;
+        audio.pause();
+        audio.currentTime = 0;
+        const survived = state.health > 0;
+        if (!survived) {
+          endingEl.textContent = "Result: the core collapsed before the track resolved. Rebuild the aegis timing.";
+          return;
+        }
+        if (state.bloomsDefused >= 5 && state.combo >= 12) {
+          endingEl.textContent = "Result: full defense. The guardian core stabilizes and the bloom wave folds into your rhythm.";
+          return;
+        }
+        if (state.score >= 3500) {
+          endingEl.textContent = "Result: controlled survival. The defense line bends but holds through the final drop.";
+          return;
+        }
+        endingEl.textContent = "Result: partial containment. The core survives, but the orbit stays unstable.";
+      }
+
+      function resetRun() {
+        state.score = 0;
+        state.combo = 0;
+        state.health = 100;
+        state.parries = 0;
+        state.bloomsDefused = 0;
+        state.ripples = [];
+        syncMeterEl.style.width = "0%";
+        endingEl.textContent = "";
+        syncHud();
+        buildEnemies();
+      }
+
+      async function init() {
+        if (state.analysis) return;
+        const response = await fetch(analysisUrl);
+        state.analysis = await response.json();
+        buildEnemies();
+        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. ${state.analysis.beatCount} beats mapped into orbital threats.`;
+      }
+
+      startButton.onclick = async () => {
+        await init();
+        if (difficultyEl.value === "easy") {
+          state.travelTime = 2.55;
+          state.parryWindow = 0.2;
+          state.guardWidth = Math.PI / 2.75;
+        } else if (difficultyEl.value === "hard") {
+          state.travelTime = 1.9;
+          state.parryWindow = 0.12;
+          state.guardWidth = Math.PI / 4;
+        } else {
+          state.travelTime = 2.2;
+          state.parryWindow = 0.16;
+          state.guardWidth = Math.PI / 3;
+        }
+        resetRun();
+        state.live = true;
+        audio.currentTime = 0;
+        await audio.play().catch(() => {
+          state.live = false;
+          sectionEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      audio.addEventListener("ended", finishRun);
+
+      window.addEventListener("keydown", (event) => {
+        if (event.code === "ArrowLeft" || event.code === "KeyA") {
+          state.guardAngle -= Math.PI / 14;
+        }
+        if (event.code === "ArrowRight" || event.code === "KeyD") {
+          state.guardAngle += Math.PI / 14;
+        }
+        if (event.code === "Space") {
+          event.preventDefault();
+          tryParry();
+        }
+      });
+
+      function drawBackground(time, centerX, centerY) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const gradient = ctx.createRadialGradient(centerX, centerY, 40, centerX, centerY, Math.max(canvas.width, canvas.height) * 0.7);
+        gradient.addColorStop(0, "rgba(13,20,35,0.65)");
+        gradient.addColorStop(1, "rgba(2,6,12,0.98)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        state.stars.forEach((star) => {
+          star.y += star.speed * (state.live ? 3 : 1);
+          if (star.y > 1.02) star.y = -0.02;
+          ctx.fillStyle = `rgba(151,222,255,${0.3 + star.r * 0.15})`;
+          ctx.beginPath();
+          ctx.arc(star.x * canvas.width, star.y * canvas.height, star.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        for (let i = 0; i < 4; i += 1) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(66,108,164,${0.12 + i * 0.03})`;
+          ctx.lineWidth = 1.5;
+          ctx.arc(centerX, centerY, 120 + (i * 54), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(134,255,211,0.35)";
+        ctx.lineWidth = 4;
+        ctx.arc(centerX, centerY, 132, 0, Math.PI * 2);
+        ctx.stroke();
+
+        state.ripples = state.ripples.filter((ripple) => ripple.alpha > 0.02);
+        state.ripples.forEach((ripple) => {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(${ripple.color},${ripple.alpha})`;
+          ctx.lineWidth = 5;
+          ctx.arc(centerX, centerY, ripple.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ripple.radius += 4.5;
+          ripple.alpha *= 0.92;
+        });
+      }
+
+      function drawGuard(centerX, centerY) {
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(state.guardAngle);
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(151,222,255,0.96)";
+        ctx.lineWidth = 18;
+        ctx.shadowColor = "rgba(151,222,255,0.45)";
+        ctx.shadowBlur = 24;
+        ctx.arc(0, 0, 132, -state.guardWidth / 2, state.guardWidth / 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "rgba(134,255,211,0.9)";
+        ctx.arc(0, 0, 170, -0.06, 0.06);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawCore(centerX, centerY, time) {
+        const pulse = 1 + Math.sin(time * 3.4) * 0.03;
+        const size = 128 * pulse;
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.drawImage(guardianCore, -size / 2, -size / 2, size, size);
+        ctx.restore();
+      }
+
+      function drawEnemies(centerX, centerY, now) {
+        state.enemies.forEach((enemy) => {
+          if (enemy.hit || enemy.missed) return;
+          const visibleStart = enemy.beat - state.travelTime;
+          if (now < visibleStart - 0.2) return;
+
+          const radius = getEnemyRadius(enemy, now);
+          const x = centerX + Math.cos(enemy.angle) * radius;
+          const y = centerY + Math.sin(enemy.angle) * radius;
+          const approaching = Math.max(0, Math.min(1, 1 - ((enemy.beat - now) / state.travelTime)));
+          const size = enemy.type === "bloom" ? 74 + approaching * 16 : 54 + approaching * 12;
+          const sprite = enemy.type === "bloom" ? bassBloom : tempoShard;
+
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(enemy.angle + now * 0.45);
+          ctx.globalAlpha = 0.82 + approaching * 0.18;
+          ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+          ctx.restore();
+
+          if (enemy.type === "bloom") {
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(255,178,111,0.7)";
+            ctx.lineWidth = 2;
+            ctx.arc(x, y, size * 0.42, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        });
+      }
+
+      function updateRun(now) {
+        if (!state.live) return;
+        const section = sectionForTime(now);
+        sectionEl.textContent = `${section.label.toUpperCase()} | rotate to align, tap space to parry at ring | ${now.toFixed(2)}s`;
+
+        state.enemies.forEach((enemy) => {
+          if (enemy.hit || enemy.missed) return;
+          if (now > enemy.beat + state.parryWindow) {
+            enemy.missed = true;
+            state.combo = 0;
+            state.health -= enemy.type === "bloom" ? 16 : enemy.splitFromBloom ? 9 : 7;
+            createRipple("255,108,138");
+          }
+        });
+
+        if (state.health <= 0) {
+          state.health = 0;
+          syncHud();
+          finishRun();
+          return;
+        }
+
+        syncHud();
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2 + 18;
+        const now = state.live ? audio.currentTime : 0;
+        updateRun(now);
+        drawBackground(now, centerX, centerY);
+        drawGuard(centerX, centerY);
+        drawEnemies(centerX, centerY, now);
+        drawCore(centerX, centerY, now);
+      }
+
+      resize();
+      initStars();
+      syncHud();
+      animate();
+
+      window.addEventListener("resize", resize);
+    </script>
+  </body>
+  </html>

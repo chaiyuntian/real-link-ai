@@ -6,6 +6,7 @@
     "build": "node scripts/build-site.mjs",
     "analyze:fal": "node scripts/analyze_video_with_fal.mjs",
     "generate:song": "node scripts/generate_song_with_fal.mjs",
+    "generate:tempo-assets": "node scripts/generate_tempo_orbital_assets.mjs",
     "sync:r2": "bash scripts/sync_r2_assets.sh",
     "deploy:cloudflare": "npm run build && npm run sync:r2 && npx wrangler deploy",
     "dev:site": "python3 -m http.server 8000"

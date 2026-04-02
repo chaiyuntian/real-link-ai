@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-04-02T14:07:24.676Z",
+  "outputs": [
+    {
+      "slug": "guardian-core",
+      "prompt": "A luminous sci-fi guardian core for a rhythm game UI. Floating mechanical heart with teal and gold energy veins, circular silhouette, highly readable at small size. Front view, centered composition, dark studio backdrop, no text, no watermark.",
+      "generationModel": "fal-ai/flux/schnell",
+      "backgroundRemovalModel": "fal-ai/imageutils/rembg",
+      "rawImage": "tempo/assets/orbital-aegis/guardian-core-raw.png",
+      "cutoutImage": "tempo/assets/orbital-aegis/guardian-core.png",
+      "rawImageUrl": "https://v3b.fal.media/files/b/0a94a59b/wgj2uGdmJjND1rxFLi7-p.png",
+      "cutoutImageUrl": "https://v3b.fal.media/files/b/0a94a59b/8uxDXYRQTijbW610KaAGo_19fcb7a68b704199b7ce91a14bdd2c07.png",
+      "generated": {
+        "data": {
+          "images": [
+            {
+              "url": "https://v3b.fal.media/files/b/0a94a59b/wgj2uGdmJjND1rxFLi7-p.png",
+              "width": 1024,
+              "height": 1024,
+              "content_type": "image/png"
+            }
+          ],
+          "timings": {
+            "inference": 0.1511531569994986
+          },
+          "seed": 773990987,
+          "has_nsfw_concepts": [
+            false
+          ],
+          "prompt": "A luminous sci-fi guardian core for a rhythm game UI. Floating mechanical heart with teal and gold energy veins, circular silhouette, highly readable at small size. Front view, centered composition, dark studio backdrop, no text, no watermark."
+        },
+        "requestId": "019d4e84-fd6a-7d43-b047-f87e21d8e210"
+      }
+    },
+    {
+      "slug": "tempo-shard",
+      "prompt": "A sharp crystal tempo shard enemy for a music action game. Angular neon orange and cyan projectile, dramatic lighting, centered, isolated subject, strong silhouette. Front view, no text, no watermark.",
+      "generationModel": "fal-ai/flux/schnell",
+      "backgroundRemovalModel": "fal-ai/imageutils/rembg",
+      "rawImage": "tempo/assets/orbital-aegis/tempo-shard-raw.png",
+      "cutoutImage": "tempo/assets/orbital-aegis/tempo-shard.png",
+      "rawImageUrl": "https://v3b.fal.media/files/b/0a94a59b/-uE2GTS7Wt0RSK7jIMiBm.png",
+      "cutoutImageUrl": "https://v3b.fal.media/files/b/0a94a59b/MUZDRQ0lChZGohXj8Umt__6b1aed1a2cb74178b06514b1efa18450.png",
+      "generated": {
+        "data": {
+          "images": [
+            {
+              "url": "https://v3b.fal.media/files/b/0a94a59b/-uE2GTS7Wt0RSK7jIMiBm.png",
+              "width": 1024,
+              "height": 1024,
+              "content_type": "image/png"
+            }
+          ],
+          "timings": {
+            "inference": 0.14858156600166694
+          },
+          "seed": 999509983,
+          "has_nsfw_concepts": [
+            false
+          ],
+          "prompt": "A sharp crystal tempo shard enemy for a music action game. Angular neon orange and cyan projectile, dramatic lighting, centered, isolated subject, strong silhouette. Front view, no text, no watermark."
+        },
+        "requestId": "019d4e85-119e-7911-93d3-b9ad01b65bb0"
+      }
+    },
+    {
+      "slug": "bass-bloom",
+      "prompt": "A floating bass bloom enemy for a rhythm defense game. Alien flower orb with glowing petals and pulse core, cyan, magenta, and amber accents, centered composition. Dark neutral background, no text, no watermark.",
+      "generationModel": "fal-ai/flux/schnell",
+      "backgroundRemovalModel": "fal-ai/imageutils/rembg",
+      "rawImage": "tempo/assets/orbital-aegis/bass-bloom-raw.png",
+      "cutoutImage": "tempo/assets/orbital-aegis/bass-bloom.png",
+      "rawImageUrl": "https://v3b.fal.media/files/b/0a94a59c/ldojGT9su6VQxp5RIQny5.png",
+      "cutoutImageUrl": "https://v3b.fal.media/files/b/0a94a59c/KpWSFcNzoVdjEsRuE0fM3_0aaca43de8c245a2bd9fce0e829a7734.png",
+      "generated": {
+        "data": {
+          "images": [
+            {
+              "url": "https://v3b.fal.media/files/b/0a94a59c/ldojGT9su6VQxp5RIQny5.png",
+              "width": 1024,
+              "height": 1024,
+              "content_type": "image/png"
+            }
+          ],
+          "timings": {
+            "inference": 0.14947018800012302
+          },
+          "seed": 912916894,
+          "has_nsfw_concepts": [
+            false
+          ],
+          "prompt": "A floating bass bloom enemy for a rhythm defense game. Alien flower orb with glowing petals and pulse core, cyan, magenta, and amber accents, centered composition. Dark neutral background, no text, no watermark."
+        },
+        "requestId": "019d4e85-2004-72c2-840c-94703ca6ad9f"
+      }
+    }
+  ]
+}

@@ -79,9 +79,14 @@ const dataFilesToCopy = [
   ...await collectFiles("tempo", (relativePath) => relativePath.endsWith(".json"))
 ].sort();
 
+const staticAssetFilesToCopy = [
+  ...await collectFiles("tempo", (relativePath) => /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(relativePath))
+].sort();
+
 await ensureCleanDist();
 await Promise.all(filesToCopy.map(copyHtml));
 await Promise.all(dataFilesToCopy.map(copyStaticFile));
+await Promise.all(staticAssetFilesToCopy.map(copyStaticFile));
 await writeManifest();
 
 console.log(`Built deployable site into ${distDir}`);
