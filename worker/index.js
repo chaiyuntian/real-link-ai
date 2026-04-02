@@ -15,7 +15,7 @@ function withHeaders(response, headers) {
 
 async function serveAsset(request, env) {
   const url = new URL(request.url);
-  const assetRequest = rewriteTempoRequest(request, url);
+  const assetRequest = buildAssetRequest(request, url, tempoEntryPath(url));
   let response = await env.ASSETS.fetch(assetRequest);
   if (response.status !== 404) {
     const pathname = url.pathname;
@@ -32,7 +32,7 @@ async function serveAsset(request, env) {
     ];
 
     for (const fallback of candidates) {
-      response = await env.ASSETS.fetch(new Request(fallback.toString(), request));
+      response = await env.ASSETS.fetch(buildAssetRequest(request, url, fallback.pathname));
       if (response.status !== 404) {
         return withHeaders(response, HTML_HEADERS);
       }
@@ -53,19 +53,29 @@ function tempoPathFor(url) {
   return `/tempo${url.pathname}`;
 }
 
+function tempoEntryPath(url) {
+  if (!isTempoHost(url)) return url.pathname;
+  if (url.pathname === "/") return "/tempo/index.html";
+  return tempoPathFor(url);
+}
+
 function tempoFallbackRoot(url) {
   return isTempoHost(url) ? "/tempo/index.html" : "/index.html";
 }
 
-function rewriteTempoRequest(request, url) {
-  if (!isTempoHost(url)) return request;
+function buildAssetRequest(request, url, pathname) {
+  if (!isTempoHost(url) && pathname === url.pathname) return request;
   const rewritten = new URL(request.url);
-  rewritten.pathname = tempoPathFor(url);
+  rewritten.pathname = pathname;
   return new Request(rewritten.toString(), request);
 }
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+    if (isTempoHost(url) && url.pathname === "/") {
+      return Response.redirect(new URL("/tempo/", url), 302);
+    }
     return serveAsset(request, env);
   }
 };
