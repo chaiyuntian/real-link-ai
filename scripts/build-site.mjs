@@ -65,7 +65,8 @@ async function copyStaticFile(relativePath) {
 const filesToCopy = [
   "index.html",
   ...await collectFiles("gameplay", (relativePath) => relativePath.endsWith(".html")),
-  ...await collectFiles("tools", (relativePath) => relativePath.endsWith(".html"))
+  ...await collectFiles("tools", (relativePath) => relativePath.endsWith(".html")),
+  ...await collectFiles("tempo", (relativePath) => relativePath.endsWith(".html"))
 ].sort();
 
 const dataFilesToCopy = [
@@ -73,7 +74,9 @@ const dataFilesToCopy = [
   ...await collectFiles("annotation-exports", (relativePath) => relativePath.endsWith(".json")),
   ...await collectFiles("analysis", (relativePath) => relativePath.endsWith(".json")),
   ...await collectFiles("gameplay-points", (relativePath) => relativePath.endsWith(".json")),
-  ...await collectFiles("indexed-video", (relativePath) => relativePath.endsWith(".json"))
+  ...await collectFiles("indexed-video", (relativePath) => relativePath.endsWith(".json")),
+  ...await collectFiles("generated-audio", (relativePath) => relativePath.endsWith(".json")),
+  ...await collectFiles("tempo", (relativePath) => relativePath.endsWith(".json"))
 ].sort();
 
 await ensureCleanDist();

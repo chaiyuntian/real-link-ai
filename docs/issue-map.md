@@ -34,3 +34,17 @@ The first wave maps GitHub issues to playable folders like this:
 - Issue #31 `Clip Alibi` -> planned
 
 All prototypes are standalone and can be launched from the repo root index page.
+
+## Tempo Domain
+
+- Issue #32 `Signal Garden` -> planned
+- Issue #33 `Drop Architect` -> planned
+- Issue #34 `Neon Pulse Corridor` -> `tempo/gameplay/issue-034-neon-pulse-corridor/`
+- Issue #35 `Lore Frequency` -> planned
+- Issue #36 `Tempo Tribunal` -> planned
+- Issue #37 `Bassline Raider` -> planned
+- Issue #38 `Section Breaker` -> planned
+- Issue #39 `Harmonic Runner` -> planned
+- Issue #40 `Last Chorus Escape` -> planned
+- Issue #41 `Beat Bloom` -> planned
+- Issue #42 `Sync Mirage` -> planned

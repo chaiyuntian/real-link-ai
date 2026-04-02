@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tempo.real-link.ai | AI Music Game Platform</title>
+    <style>
+      :root {
+        --bg: #06070d;
+        --panel: rgba(255,255,255,0.05);
+        --line: rgba(116,171,255,0.18);
+        --text: #eef7ff;
+        --muted: #afc8db;
+        --accent: #7fffd4;
+        --accent2: #ffb26f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(91, 116, 255, 0.28), transparent 28%),
+          radial-gradient(circle at top right, rgba(255, 178, 111, 0.22), transparent 32%),
+          linear-gradient(180deg, #04050a, #09101a 60%, #04060b 100%);
+      }
+      main { width:min(1220px, calc(100% - 28px)); margin:0 auto; padding:34px 0 70px; }
+      h1 { margin:0; font-size:clamp(42px, 7vw, 84px); line-height:.92; max-width:980px; }
+      .eyebrow { font-size:12px; text-transform:uppercase; letter-spacing:.18em; color:var(--accent); }
+      .sub { max-width:820px; color:var(--muted); line-height:1.65; font-size:18px; }
+      .hero, .section { margin-bottom:28px; }
+      .hero-grid, .grid, .columns { display:grid; gap:16px; }
+      .hero-grid { grid-template-columns:1.5fr 1fr; }
+      .grid { grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); }
+      .columns { grid-template-columns:1fr 1fr; }
+      .panel, .card {
+        border-radius:20px;
+        border:1px solid var(--line);
+        background:var(--panel);
+      }
+      .panel { padding:20px; }
+      .card {
+        display:grid;
+        gap:10px;
+        padding:18px;
+        color:inherit;
+        text-decoration:none;
+      }
+      .card small { color:var(--accent2); text-transform:uppercase; letter-spacing:.14em; }
+      .card strong { font-size:24px; }
+      .card p, p { color:var(--muted); line-height:1.6; }
+      .stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+      .stat { padding:14px; border-radius:16px; background:rgba(255,255,255,.04); }
+      .stat strong { display:block; margin-top:6px; font-size:30px; }
+      ul { margin:0; padding-left:18px; color:var(--muted); line-height:1.8; }
+      @media (max-width:920px) {
+        .hero-grid, .columns { grid-template-columns:1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">tempo.real-link.ai / ai-music gameplay platform</div>
+        <h1>Generate a song, analyze the beat graph, ship a playable world.</h1>
+        <p class="sub">This platform uses AI-generated music as raw game material. The track is generated offline, the beat and section structure are analyzed offline, and the browser game only consumes saved static assets at runtime.</p>
+      </section>
+
+      <section class="hero-grid">
+        <div class="panel">
+          <h2>Platform Loop</h2>
+          <p>Generate a short song with fal, save the waveform, derive beat and energy structure, then drive a rhythm game, runner, bullet pattern, or narrative section machine from the saved analysis.</p>
+        </div>
+        <div class="panel">
+          <div class="stats">
+            <div class="stat">Playable Games<strong>1</strong></div>
+            <div class="stat">Queued Concepts<strong>10</strong></div>
+            <div class="stat">Runtime AI<strong>0</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Play</h2>
+        <div class="grid">
+          <a class="card" href="./gameplay/issue-034-neon-pulse-corridor/">
+            <small>Three.js Rhythm</small>
+            <strong>Neon Pulse Corridor</strong>
+            <p>Fly down a synth tunnel and hit beat-synced gates generated from an AI-made track.</p>
+          </a>
+          <a class="card" href="./analysis/tempo-batch1-analysis.json">
+            <small>Beat Graph</small>
+            <strong>Track Analysis JSON</strong>
+            <p>Saved offline analysis with beats, energy frames, estimated BPM, and section boundaries.</p>
+          </a>
+          <a class="card" href="./generated-audio/tempo-batch1.metadata.json">
+            <small>Generation</small>
+            <strong>Track Metadata</strong>
+            <p>Prompt, model, and generation record for the first tempo batch track.</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Next 10 Games</h2>
+        <div class="columns">
+          <div class="panel">
+            <ul>
+              <li>Issue #32 `Signal Garden`</li>
+              <li>Issue #33 `Drop Architect`</li>
+              <li>Issue #34 `Neon Pulse Corridor`</li>
+              <li>Issue #35 `Lore Frequency`</li>
+              <li>Issue #36 `Tempo Tribunal`</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <ul>
+              <li>Issue #37 `Bassline Raider`</li>
+              <li>Issue #38 `Section Breaker`</li>
+              <li>Issue #39 `Harmonic Runner`</li>
+              <li>Issue #40 `Last Chorus Escape`</li>
+              <li>Issue #41 `Beat Bloom`</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+  </html>

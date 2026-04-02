@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 34 | Neon Pulse Corridor</title>
+    <style>
+      :root {
+        --bg: #05070c;
+        --panel: rgba(4, 10, 18, 0.86);
+        --line: rgba(123, 200, 255, 0.18);
+        --text: #edf7ff;
+        --muted: #acc7d8;
+      }
+      * { box-sizing: border-box; }
+      body { margin:0; overflow:hidden; font-family:"Avenir Next","Segoe UI",sans-serif; color:var(--text); background:#02050b; }
+      canvas { display:block; }
+      .hud, .panel {
+        position:fixed;
+        z-index:2;
+        border:1px solid var(--line);
+        background:var(--panel);
+        backdrop-filter: blur(8px);
+      }
+      .hud {
+        top:16px;
+        left:16px;
+        right:16px;
+        border-radius:18px;
+        padding:14px 16px;
+        display:grid;
+        grid-template-columns:2fr repeat(4, 1fr);
+        gap:12px;
+        align-items:center;
+      }
+      .panel {
+        right:16px;
+        bottom:16px;
+        width:min(380px, calc(100% - 32px));
+        border-radius:20px;
+        padding:16px;
+      }
+      .small { color:var(--muted); line-height:1.58; }
+      button {
+        width:100%;
+        margin-top:10px;
+        border:0;
+        border-radius:14px;
+        padding:12px 14px;
+        font:inherit;
+        font-weight:700;
+        cursor:pointer;
+        background:#97deff;
+        color:#06111d;
+      }
+      a { color:#97deff; }
+      strong { display:block; font-size:28px; margin-top:4px; }
+      @media (max-width:900px) {
+        .hud { grid-template-columns:1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hud">
+      <div>
+        <div>Neon Pulse Corridor</div>
+        <div class="small" id="section">Load track analysis to start.</div>
+      </div>
+      <div>Score<strong id="score">0</strong></div>
+      <div>Combo<strong id="combo">0</strong></div>
+      <div>Misses<strong id="misses">0</strong></div>
+      <div>Lane<strong id="lane">1</strong></div>
+    </div>
+
+    <div class="panel">
+      <p><a href="../../index.html">Back to tempo</a></p>
+      <p class="small">Use `A`, `S`, `D` to switch lanes. Hit `Space` when a gate reaches the strike plane. The song, beat graph, and sections were generated and analyzed offline.</p>
+      <p class="small" id="ending"></p>
+      <button id="start">Start Run</button>
+    </div>
+
+    <script type="module">
+      import * as THREE from "https://unpkg.com/three@0.170.0/build/three.module.js";
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x04060d, 0.038);
+      const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 1.6, 6);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      const ambient = new THREE.AmbientLight(0x95a9ff, 1.4);
+      const point = new THREE.PointLight(0x7ffff0, 25, 50);
+      point.position.set(0, 3, 4);
+      scene.add(ambient, point);
+
+      const corridor = new THREE.Group();
+      scene.add(corridor);
+      const laneXs = [-2.2, 0, 2.2];
+      const walls = [];
+      for (let i = 0; i < 28; i += 1) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(4.4, 0.05, 10, 48),
+          new THREE.MeshBasicMaterial({ color: 0x335bff, transparent: true, opacity: 0.42 })
+        );
+        ring.rotation.x = Math.PI / 2;
+        ring.position.z = -i * 3;
+        corridor.add(ring);
+        walls.push(ring);
+      }
+
+      const laneLines = new THREE.Group();
+      scene.add(laneLines);
+      laneXs.forEach((x, index) => {
+        const geometry = new THREE.CylinderGeometry(0.03, 0.03, 90, 6);
+        const material = new THREE.MeshBasicMaterial({ color: index === 1 ? 0x97deff : 0x2f4d8d });
+        const lane = new THREE.Mesh(geometry, material);
+        lane.rotation.z = Math.PI / 2;
+        lane.position.set(x, -0.7, -40);
+        laneLines.add(lane);
+      });
+
+      const strikePlane = new THREE.Mesh(
+        new THREE.BoxGeometry(7.6, 0.06, 0.6),
+        new THREE.MeshBasicMaterial({ color: 0x97deff })
+      );
+      strikePlane.position.set(0, -0.85, 1.4);
+      scene.add(strikePlane);
+
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const missesEl = document.getElementById("misses");
+      const laneEl = document.getElementById("lane");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+
+      const audio = new Audio("https://videos-batch1.real-link.ai/tempo/tempo-batch1.wav");
+      audio.crossOrigin = "anonymous";
+
+      let analysis = null;
+      let notes = [];
+      let laneIndex = 1;
+      let score = 0;
+      let combo = 0;
+      let misses = 0;
+      let live = false;
+      const speed = 15;
+
+      function syncStats() {
+        scoreEl.textContent = score;
+        comboEl.textContent = combo;
+        missesEl.textContent = misses;
+        laneEl.textContent = laneIndex + 1;
+      }
+
+      function sectionForTime(time) {
+        if (!analysis) return null;
+        return analysis.sections.find((section) => time >= section.start && time < section.end) || analysis.sections.at(-1);
+      }
+
+      function makeNote(beat, index) {
+        const lane = index % 3;
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(1.05, 1.05, 0.6),
+          new THREE.MeshStandardMaterial({
+            color: [0xffb26f, 0x97deff, 0x85ffd3][lane],
+            emissive: [0x5a2e00, 0x0f2a52, 0x004d3c][lane],
+            metalness: 0.2,
+            roughness: 0.25
+          })
+        );
+        mesh.position.set(laneXs[lane], -0.2, -60);
+        scene.add(mesh);
+        return {
+          beat,
+          lane,
+          hit: false,
+          missed: false,
+          mesh
+        };
+      }
+
+      function buildNotes() {
+        notes.forEach((note) => scene.remove(note.mesh));
+        notes = analysis.beats.map((beat, index) => makeNote(beat, index));
+      }
+
+      async function init() {
+        const response = await fetch("../../analysis/tempo-batch1-analysis.json");
+        analysis = await response.json();
+        buildNotes();
+        sectionEl.textContent = `Estimated BPM ${analysis.estimatedBpm}. ${analysis.beatCount} beats detected.`;
+      }
+
+      function finish() {
+        live = false;
+        if (score >= Math.floor((analysis?.beatCount || 1) * 0.7)) endingEl.textContent = "Run result: the corridor holds and the track resolves as a clean neon chase.";
+        else if (score >= Math.floor((analysis?.beatCount || 1) * 0.4)) endingEl.textContent = "Run result: partial control. The song survives, but the run drifts.";
+        else endingEl.textContent = "Run result: the corridor breaks apart under missed timing.";
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!analysis) await init();
+        score = 0;
+        combo = 0;
+        misses = 0;
+        laneIndex = 1;
+        buildNotes();
+        syncStats();
+        endingEl.textContent = "";
+        audio.currentTime = 0;
+        live = true;
+        await audio.play().catch(() => {
+          live = false;
+          sectionEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      window.addEventListener("keydown", (event) => {
+        if (event.code === "KeyA") laneIndex = 0;
+        if (event.code === "KeyS") laneIndex = 1;
+        if (event.code === "KeyD") laneIndex = 2;
+        if (event.code === "Space" && live) {
+          const candidate = notes.find((note) => !note.hit && !note.missed && note.lane === laneIndex);
+          if (!candidate) return;
+          const delta = Math.abs(candidate.beat - audio.currentTime);
+          if (delta <= 0.19) {
+            candidate.hit = true;
+            score += 1;
+            combo += 1;
+            candidate.mesh.material.emissive.setHex(0xffffff);
+            candidate.mesh.scale.setScalar(1.35);
+          } else {
+            combo = 0;
+            misses += 1;
+          }
+          syncStats();
+        }
+      });
+
+      audio.addEventListener("ended", finish);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const time = live ? audio.currentTime : 0;
+        const activeSection = sectionForTime(time);
+        if (activeSection) {
+          sectionEl.textContent = `${activeSection.label.toUpperCase()} section | BPM ${analysis?.estimatedBpm || "--"} | current ${time.toFixed(2)}s`;
+        }
+
+        walls.forEach((wall, index) => {
+          wall.rotation.z += 0.002 + index * 0.00008;
+          wall.material.opacity = 0.2 + Math.sin((time * 2) + index * 0.4) * 0.12;
+        });
+
+        notes.forEach((note) => {
+          const z = 1.4 - ((note.beat - time) * speed);
+          note.mesh.position.set(laneXs[note.lane], -0.2, z);
+
+          if (!note.hit && !note.missed && z > 2.2) {
+            note.missed = true;
+            misses += 1;
+            combo = 0;
+            syncStats();
+          }
+
+          if (note.hit) {
+            note.mesh.rotation.x += 0.12;
+            note.mesh.rotation.y += 0.18;
+            note.mesh.position.y += 0.03;
+          }
+        });
+
+        laneLines.children.forEach((lane, index) => {
+          lane.material.color.setHex(index === laneIndex ? 0x97deff : 0x274475);
+        });
+
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      animate();
+      syncStats();
+    </script>
+  </body>
+  </html>

@@ -4,6 +4,8 @@ Video-first gameplay experiments built from a small set of reusable public clips
 
 The repo is evolving into a short-video gameplay platform: one clip, many game types, shared tooling, and a continuous publish loop.
 
+It now also includes a tempo-focused product surface for AI-generated music gameplay under `tempo.real-link.ai`.
+
 ## What this repo does
 
 - Downloads 3 public video clips locally for experimentation.
@@ -85,6 +87,17 @@ After that, every push to `main` will:
 - Issue 29: `Indexed Drift`
 - Issue 30: `Tempo Cartographer`
 - Issue 31: `Clip Alibi`
+- Issue 32: `Signal Garden`
+- Issue 33: `Drop Architect`
+- Issue 34: `Neon Pulse Corridor`
+- Issue 35: `Lore Frequency`
+- Issue 36: `Tempo Tribunal`
+- Issue 37: `Bassline Raider`
+- Issue 38: `Section Breaker`
+- Issue 39: `Harmonic Runner`
+- Issue 40: `Last Chorus Escape`
+- Issue 41: `Beat Bloom`
+- Issue 42: `Sync Mirage`
 
 ## Repo structure
 
@@ -97,7 +110,9 @@ After that, every push to `main` will:
 - `docs/gameplay-point-tool-selection.md`: recommended tools for inserting gameplay points into video
 - `docs/indexed-video-gameplay.md`: how indexed or parametric video can become a gameplay axis
 - `docs/short-video-platform.md`: platform direction and next-wave concept backlog
+- `docs/tempo-platform.md`: generated-music gameplay platform direction and first-wave issue queue
 - `gameplay/`: standalone gameplay folders
+- `tempo/`: static pages and analysis artifacts for the tempo domain
 - `indexed-video/`: authored indexed-video payloads that turn one clip into a queryable game space
 - `narrative/story-beats/`: time-aligned story state data used by narrative-heavy prototypes
 - `analysis/`: offline AI-generated video understanding artifacts

@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-04-02T12:21:21.281Z",
+  "model": "fal-ai/lyria2",
+  "prompt": "Instrumental electronic track with clear drum hits, bright synth melody, pulsing bass, and a rising energy curve. Suitable for a rhythm game. No vocals.",
+  "audioUrl": "https://v3b.fal.media/files/b/0a94a31f/IyVG7hDF-57NWgh4z86Ut_output.wav",
+  "result": {
+    "data": {
+      "audio": {
+        "url": "https://v3b.fal.media/files/b/0a94a31f/IyVG7hDF-57NWgh4z86Ut_output.wav",
+        "content_type": "audio/wav",
+        "file_name": "output.wav",
+        "file_size": 6291544
+      }
+    },
+    "requestId": "019d4e23-adc2-7af3-b047-a6ab3284a0bd"
+  }
+}
