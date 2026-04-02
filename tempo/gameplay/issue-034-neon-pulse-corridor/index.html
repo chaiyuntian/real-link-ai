@@ -75,6 +75,12 @@
     <div class="panel">
       <p><a href="../../index.html">Back to tempo</a></p>
       <p class="small">Use `A`, `S`, `D` to switch lanes. Hit `Space` when a gate reaches the strike plane. The song, beat graph, and sections were generated and analyzed offline.</p>
+      <label class="small" for="difficulty">Difficulty</label>
+      <select id="difficulty" style="width:100%;margin-top:8px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:inherit;">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
       <p class="small" id="ending"></p>
       <button id="start">Start Run</button>
     </div>
@@ -136,8 +142,9 @@
       const laneEl = document.getElementById("lane");
       const sectionEl = document.getElementById("section");
       const endingEl = document.getElementById("ending");
+      const difficultyEl = document.getElementById("difficulty");
 
-      const audio = new Audio("https://videos-batch1.real-link.ai/tempo/tempo-batch1.wav");
+      const audio = new Audio("/tempo-audio/tempo/tempo-batch1.wav");
       audio.crossOrigin = "anonymous";
 
       let analysis = null;
@@ -147,7 +154,8 @@
       let combo = 0;
       let misses = 0;
       let live = false;
-      const speed = 15;
+      let baseSpeed = 15;
+      let strikeWindow = 0.19;
 
       function syncStats() {
         scoreEl.textContent = score;
@@ -185,7 +193,12 @@
 
       function buildNotes() {
         notes.forEach((note) => scene.remove(note.mesh));
-        notes = analysis.beats.map((beat, index) => makeNote(beat, index));
+        const filteredBeats = analysis.beats.filter((_, index) => {
+          if (difficultyEl.value === "easy") return index % 2 === 0;
+          if (difficultyEl.value === "hard") return true;
+          return index % 1 === 0;
+        });
+        notes = filteredBeats.map((beat, index) => makeNote(beat, index));
       }
 
       async function init() {
@@ -204,6 +217,8 @@
 
       document.getElementById("start").onclick = async () => {
         if (!analysis) await init();
+        baseSpeed = difficultyEl.value === "easy" ? 12 : difficultyEl.value === "hard" ? 19 : 15;
+        strikeWindow = difficultyEl.value === "easy" ? 0.24 : difficultyEl.value === "hard" ? 0.14 : 0.19;
         score = 0;
         combo = 0;
         misses = 0;
@@ -227,9 +242,9 @@
           const candidate = notes.find((note) => !note.hit && !note.missed && note.lane === laneIndex);
           if (!candidate) return;
           const delta = Math.abs(candidate.beat - audio.currentTime);
-          if (delta <= 0.19) {
+          if (delta <= strikeWindow) {
             candidate.hit = true;
-            score += 1;
+            score += combo >= 8 ? 2 : 1;
             combo += 1;
             candidate.mesh.material.emissive.setHex(0xffffff);
             candidate.mesh.scale.setScalar(1.35);
@@ -247,8 +262,9 @@
         requestAnimationFrame(animate);
         const time = live ? audio.currentTime : 0;
         const activeSection = sectionForTime(time);
+        const speed = activeSection?.label === "drop" ? baseSpeed + 3 : activeSection?.label === "lift" ? baseSpeed + 1.5 : baseSpeed;
         if (activeSection) {
-          sectionEl.textContent = `${activeSection.label.toUpperCase()} section | BPM ${analysis?.estimatedBpm || "--"} | current ${time.toFixed(2)}s`;
+          sectionEl.textContent = `${activeSection.label.toUpperCase()} section | BPM ${analysis?.estimatedBpm || "--"} | speed ${speed.toFixed(1)} | current ${time.toFixed(2)}s`;
         }
 
         walls.forEach((wall, index) => {

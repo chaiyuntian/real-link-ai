@@ -2,6 +2,11 @@ const HTML_HEADERS = {
   "content-type": "text/html; charset=utf-8",
   "cache-control": "public, max-age=60"
 };
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET,HEAD,OPTIONS",
+  "access-control-allow-headers": "*"
+};
 
 function withHeaders(response, headers) {
   const updated = new Headers(response.headers);
@@ -42,6 +47,17 @@ async function serveAsset(request, env) {
   return response;
 }
 
+async function serveTempoAudio(request) {
+  const url = new URL(request.url);
+  const assetPath = url.pathname.replace(/^\/tempo-audio/, "");
+  const remoteUrl = `https://videos-batch1.real-link.ai${assetPath}`;
+  const upstream = await fetch(remoteUrl, {
+    method: request.method,
+    headers: request.headers
+  });
+  return withHeaders(upstream, CORS_HEADERS);
+}
+
 function isTempoHost(url) {
   return url.hostname === "tempo.real-link.ai";
 }
@@ -73,6 +89,12 @@ function buildAssetRequest(request, url, pathname) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (request.method === "OPTIONS" && url.pathname.startsWith("/tempo-audio/")) {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+    if (url.pathname.startsWith("/tempo-audio/")) {
+      return serveTempoAudio(request);
+    }
     if (isTempoHost(url) && url.pathname === "/") {
       return Response.redirect(new URL("/tempo/", url), 302);
     }
