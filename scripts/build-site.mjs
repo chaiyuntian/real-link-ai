@@ -21,7 +21,8 @@ const filesToCopy = [
   "gameplay/issue-012-reverse-causality-tribunal/index.html",
   "gameplay/issue-013-tempo-fate-engine/index.html",
   "gameplay/issue-014-annotated-timeline-director/index.html",
-  "gameplay/issue-016-ai-plot-forensics/index.html"
+  "gameplay/issue-016-ai-plot-forensics/index.html",
+  "tools/gameplay-point-studio/index.html"
 ];
 
 const dataFilesToCopy = [

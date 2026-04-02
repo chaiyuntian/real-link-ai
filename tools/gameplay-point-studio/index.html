@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gameplay Point Studio</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#eef8ff; background:linear-gradient(180deg,#08111d,#03070b 62%); }
+      main { width:min(1240px, calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.45fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.05); border:1px solid rgba(136,205,255,.16); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      .toolbar, .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+      .toolbar { margin:14px 0; }
+      input, select, textarea, button { font:inherit; }
+      input, select, textarea { width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); color:inherit; }
+      button { cursor:pointer; border:0; border-radius:12px; padding:10px 14px; background:#9adfff; color:#07131f; font-weight:700; }
+      .timeline { position:relative; height:22px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; margin:12px 0; }
+      .marker { position:absolute; top:0; bottom:0; width:4px; background:#9adfff; }
+      .segment { position:absolute; top:0; bottom:0; background:rgba(255, 154, 92, .58); border-left:1px solid rgba(255,255,255,.45); border-right:1px solid rgba(255,255,255,.45); }
+      .list { display:grid; gap:10px; margin-top:12px; }
+      .item { padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.05); }
+      textarea { min-height:220px; }
+      .small { color:#b6cfdd; }
+      @media (max-width:960px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9adfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <h1>Gameplay Point Studio</h1>
+          <p class="small">Insert gameplay points and segments directly on top of a video timeline. Export normalized JSON for the gameplay pipeline.</p>
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" controls preload="auto"></video>
+          <div class="timeline" id="timeline"></div>
+          <div class="toolbar">
+            <button id="addPoint">Add Point At Current Time</button>
+            <button id="startSegment">Mark Segment Start</button>
+            <button id="endSegment">Mark Segment End</button>
+            <button id="exportJson">Export JSON</button>
+          </div>
+          <div class="row">
+            <div style="flex:1 1 180px">
+              <label>Label</label>
+              <input id="label" value="decision" />
+            </div>
+            <div style="flex:1 1 180px">
+              <label>Mode</label>
+              <select id="mode">
+                <option value="point">Point</option>
+                <option value="segment">Segment</option>
+              </select>
+            </div>
+            <div style="flex:2 1 260px">
+              <label>Prompt / Note</label>
+              <input id="prompt" value="Insert a gameplay event here." />
+            </div>
+          </div>
+          <div class="list" id="items"></div>
+        </section>
+        <aside class="panel">
+          <h2>Normalized Output</h2>
+          <p class="small">This is the JSON shape intended for gameplay consumption and conversion scripts.</p>
+          <textarea id="output" spellcheck="false"></textarea>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const video = document.getElementById("video");
+      const timeline = document.getElementById("timeline");
+      const itemsEl = document.getElementById("items");
+      const outputEl = document.getElementById("output");
+      const labelEl = document.getElementById("label");
+      const modeEl = document.getElementById("mode");
+      const promptEl = document.getElementById("prompt");
+      let draftStart = null;
+      const items = [];
+
+      function currentTime() {
+        return Number((video.currentTime || 0).toFixed(2));
+      }
+
+      function payload() {
+        return {
+          video: "sintel-trailer.mp4",
+          createdAt: new Date().toISOString(),
+          items
+        };
+      }
+
+      function render() {
+        const duration = video.duration || 12;
+        timeline.innerHTML = "";
+        itemsEl.innerHTML = "";
+
+        items.forEach((item, index) => {
+          if (item.type === "point") {
+            const marker = document.createElement("div");
+            marker.className = "marker";
+            marker.style.left = `${(item.time / duration) * 100}%`;
+            marker.title = `${item.label} @ ${item.time}s`;
+            timeline.appendChild(marker);
+          } else {
+            const seg = document.createElement("div");
+            seg.className = "segment";
+            seg.style.left = `${(item.start / duration) * 100}%`;
+            seg.style.width = `${((item.end - item.start) / duration) * 100}%`;
+            seg.title = `${item.label} ${item.start}-${item.end}s`;
+            timeline.appendChild(seg);
+          }
+
+          const row = document.createElement("div");
+          row.className = "item";
+          row.innerHTML = `
+            <strong>${index + 1}. ${item.label}</strong><br />
+            <span class="small">${item.type === "point" ? `${item.time}s` : `${item.start}s -> ${item.end}s`}</span><br />
+            <span>${item.prompt}</span>
+          `;
+          itemsEl.appendChild(row);
+        });
+
+        outputEl.value = JSON.stringify(payload(), null, 2);
+      }
+
+      function addPoint() {
+        items.push({
+          type: "point",
+          label: labelEl.value,
+          time: currentTime(),
+          prompt: promptEl.value
+        });
+        render();
+      }
+
+      function markSegmentStart() {
+        draftStart = currentTime();
+      }
+
+      function markSegmentEnd() {
+        if (draftStart == null) return;
+        const end = currentTime();
+        items.push({
+          type: "segment",
+          label: labelEl.value,
+          start: Math.min(draftStart, end),
+          end: Math.max(draftStart, end),
+          prompt: promptEl.value
+        });
+        draftStart = null;
+        render();
+      }
+
+      function exportJson() {
+        const blob = new Blob([outputEl.value], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "gameplay-points.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      document.getElementById("addPoint").onclick = addPoint;
+      document.getElementById("startSegment").onclick = markSegmentStart;
+      document.getElementById("endSegment").onclick = markSegmentEnd;
+      document.getElementById("exportJson").onclick = exportJson;
+      video.addEventListener("loadedmetadata", render);
+      render();
+    </script>
+  </body>
+  </html>
