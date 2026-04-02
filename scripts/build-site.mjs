@@ -5,36 +5,23 @@ const root = process.cwd();
 const distDir = path.join(root, "dist");
 const videoBaseUrl = process.env.VIDEO_BASE_URL || "https://videos-batch1.real-link.ai";
 
-const filesToCopy = [
-  "index.html",
-  "gameplay/issue-001-rhythm-cut/index.html",
-  "gameplay/issue-002-freeze-frame-hunter/index.html",
-  "gameplay/issue-003-director-split/index.html",
-  "gameplay/issue-004-glitch-chase/index.html",
-  "gameplay/issue-005-remix-runner/index.html",
-  "gameplay/issue-006-subtitle-saboteur/index.html",
-  "gameplay/issue-007-meme-sniper/index.html",
-  "gameplay/issue-008-threat-tagger/index.html",
-  "gameplay/issue-009-boss-scrubber/index.html",
-  "gameplay/issue-010-emotion-switchboard/index.html",
-  "gameplay/issue-011-narrative-grounding-ops/index.html",
-  "gameplay/issue-012-reverse-causality-tribunal/index.html",
-  "gameplay/issue-013-tempo-fate-engine/index.html",
-  "gameplay/issue-014-annotated-timeline-director/index.html",
-  "gameplay/issue-016-ai-plot-forensics/index.html",
-  "gameplay/issue-018-point-driven-fate-cuts/index.html",
-  "tools/gameplay-point-studio/index.html"
-];
+async function collectFiles(dir, matcher) {
+  const start = path.join(root, dir);
+  const entries = await fs.readdir(start, { withFileTypes: true });
+  const results = [];
 
-const dataFilesToCopy = [
-  "narrative/story-beats/tears-of-steel-ops.json",
-  "narrative/story-beats/sintel-causality.json",
-  "narrative/story-beats/sintel-tempo-fate.json",
-  "narrative/story-beats/sintel-annotated-director.json",
-  "annotation-exports/sintel-director-labelstudio-like.json",
-  "analysis/fal/sintel-trailer-understanding.json",
-  "gameplay-points/sintel-fate-cuts.json"
-];
+  for (const entry of entries) {
+    const absolute = path.join(start, entry.name);
+    const relative = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...await collectFiles(relative, matcher));
+      continue;
+    }
+    if (matcher(relative)) results.push(relative);
+  }
+
+  return results;
+}
 
 async function ensureCleanDist() {
   await fs.rm(distDir, { recursive: true, force: true });
@@ -74,6 +61,20 @@ async function copyStaticFile(relativePath) {
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
   await fs.copyFile(sourcePath, targetPath);
 }
+
+const filesToCopy = [
+  "index.html",
+  ...await collectFiles("gameplay", (relativePath) => relativePath.endsWith(".html")),
+  ...await collectFiles("tools", (relativePath) => relativePath.endsWith(".html"))
+].sort();
+
+const dataFilesToCopy = [
+  ...await collectFiles("narrative", (relativePath) => relativePath.endsWith(".json")),
+  ...await collectFiles("annotation-exports", (relativePath) => relativePath.endsWith(".json")),
+  ...await collectFiles("analysis", (relativePath) => relativePath.endsWith(".json")),
+  ...await collectFiles("gameplay-points", (relativePath) => relativePath.endsWith(".json")),
+  ...await collectFiles("indexed-video", (relativePath) => relativePath.endsWith(".json"))
+].sort();
 
 await ensureCleanDist();
 await Promise.all(filesToCopy.map(copyHtml));
