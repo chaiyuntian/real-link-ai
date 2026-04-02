@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 4 | Glitch Chase</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, #190913, #050207 60%);
+        color: #fff0fb;
+      }
+      main {
+        width: min(1120px, calc(100% - 24px));
+        margin: 0 auto;
+        padding: 20px 0 40px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 18px;
+      }
+      .panel {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      video {
+        width: 100%;
+        display: block;
+        border-radius: 16px;
+        background: #000;
+        transition: filter 90ms linear, transform 90ms linear;
+      }
+      .hud {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      button {
+        cursor: pointer;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 16px;
+        background: #ff7dc4;
+        color: #200715;
+        font-weight: 700;
+      }
+      @media (max-width: 920px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#ff7dc4">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/big-buck-bunny-trailer.mov" preload="auto"></video>
+        </section>
+        <aside class="panel">
+          <h1>Glitch Chase</h1>
+          <p>Survive designated chaos windows by using short freeze bursts. Outside those windows, freezing costs points.</p>
+          <div class="hud">
+            <div>Score<br /><strong id="score">0</strong></div>
+            <div>Charge<br /><strong id="charge">100</strong></div>
+          </div>
+          <p id="status">Start the chase.</p>
+          <p><strong>G</strong> toggles glitch freeze.</p>
+          <button id="start">Start Chase</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const windows = [
+        { start: 2.1, end: 3.2 },
+        { start: 6.2, end: 7.1 },
+        { start: 10.9, end: 12.0 },
+        { start: 15.2, end: 16.1 }
+      ];
+      const video = document.getElementById("video");
+      const scoreEl = document.getElementById("score");
+      const chargeEl = document.getElementById("charge");
+      const statusEl = document.getElementById("status");
+      let score = 0;
+      let charge = 100;
+      let live = false;
+      let glitching = false;
+
+      function inChaosZone(t) {
+        return windows.some((window) => t >= window.start && t <= window.end);
+      }
+
+      document.getElementById("start").addEventListener("click", async () => {
+        score = 0;
+        charge = 100;
+        live = true;
+        glitching = false;
+        scoreEl.textContent = score;
+        chargeEl.textContent = charge;
+        statusEl.textContent = "Run live.";
+        video.currentTime = 0;
+        await video.play().catch(() => {
+          statusEl.textContent = "Playback blocked. Click start again.";
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key.toLowerCase() === "g") {
+          glitching = !glitching;
+          if (glitching) {
+            video.pause();
+            video.style.filter = "contrast(1.8) saturate(1.5) hue-rotate(-25deg)";
+            video.style.transform = "translateX(4px)";
+          } else {
+            video.play();
+            video.style.filter = "";
+            video.style.transform = "";
+          }
+        }
+      });
+
+      setInterval(() => {
+        if (!live) return;
+        const t = video.currentTime;
+        const zone = inChaosZone(t);
+        if (glitching) {
+          charge = Math.max(0, charge - 4);
+          score += zone ? 18 : -12;
+          statusEl.textContent = zone ? "Good freeze zone." : "Wrong time to glitch.";
+        } else {
+          charge = Math.min(100, charge + 2);
+          score += zone ? -8 : 6;
+        }
+        if (charge <= 0) {
+          live = false;
+          glitching = false;
+          video.pause();
+          statusEl.textContent = `Charge empty. Score ${score}.`;
+        }
+        scoreEl.textContent = score;
+        chargeEl.textContent = charge;
+      }, 180);
+
+      video.addEventListener("ended", () => {
+        live = false;
+        statusEl.textContent = `Finished. Score ${score}.`;
+      });
+    </script>
+  </body>
+  </html>

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 1 | Rhythm Cut</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, #140d1b, #06070d 58%);
+        color: #f6f0ff;
+      }
+      main {
+        width: min(1200px, calc(100% - 24px));
+        margin: 0 auto;
+        padding: 20px 0 40px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 18px;
+      }
+      .panel {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 18px;
+        padding: 16px;
+      }
+      video {
+        width: 100%;
+        border-radius: 16px;
+        display: block;
+        background: #000;
+      }
+      .lane {
+        position: relative;
+        height: 220px;
+        overflow: hidden;
+        border-radius: 18px;
+        background:
+          linear-gradient(180deg, rgba(255, 106, 162, 0.16), transparent 38%),
+          #120917;
+      }
+      .hit-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 30px;
+        height: 4px;
+        background: #7effcf;
+        box-shadow: 0 0 18px rgba(126, 255, 207, 0.7);
+      }
+      .note {
+        position: absolute;
+        left: 10%;
+        width: 80%;
+        height: 18px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #ff8ab5, #ffd06f);
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .stat {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      button {
+        cursor: pointer;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        background: #7effcf;
+        color: #04110f;
+        font-weight: 700;
+      }
+      .keys {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .key {
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.08);
+      }
+      .message {
+        min-height: 28px;
+        color: #ffd06f;
+      }
+      @media (max-width: 920px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#7effcf">Back</a></p>
+      <div class="layout">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/big-buck-bunny-trailer.mov" preload="auto"></video>
+          <div class="stats">
+            <div class="stat">Score<br /><strong id="score">0</strong></div>
+            <div class="stat">Combo<br /><strong id="combo">0</strong></div>
+            <div class="stat">Hit<br /><strong id="hit">0</strong></div>
+            <div class="stat">Miss<br /><strong id="miss">0</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h1>Rhythm Cut</h1>
+          <p>Press space when a note reaches the mint line. The timing windows are tied to trailer impact beats.</p>
+          <div class="keys">
+            <span class="key">Space = Hit</span>
+            <span class="key">R = Restart</span>
+          </div>
+          <p class="message" id="message">Load the local videos, then start.</p>
+          <button id="start">Start Run</button>
+          <div class="lane" id="lane">
+            <div class="hit-line"></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const video = document.getElementById("video");
+      const lane = document.getElementById("lane");
+      const startButton = document.getElementById("start");
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const hitEl = document.getElementById("hit");
+      const missEl = document.getElementById("miss");
+      const messageEl = document.getElementById("message");
+
+      const notes = [1.8, 3.2, 4.5, 6.0, 7.4, 8.8, 10.1, 11.6, 13.2, 14.7, 16.1, 17.4, 18.9];
+      let active = false;
+      let startedAt = 0;
+      let score = 0;
+      let combo = 0;
+      let hit = 0;
+      let miss = 0;
+      let judged = new Set();
+
+      function syncHud() {
+        scoreEl.textContent = score;
+        comboEl.textContent = combo;
+        hitEl.textContent = hit;
+        missEl.textContent = miss;
+      }
+
+      function resetGame() {
+        active = false;
+        startedAt = 0;
+        score = 0;
+        combo = 0;
+        hit = 0;
+        miss = 0;
+        judged = new Set();
+        video.pause();
+        video.currentTime = 0;
+        syncHud();
+        messageEl.textContent = "Ready.";
+        render();
+      }
+
+      function currentTime() {
+        return video.currentTime || 0;
+      }
+
+      function judgeHit() {
+        if (!active) return;
+        const t = currentTime();
+        let bestIndex = -1;
+        let bestDelta = Infinity;
+
+        notes.forEach((noteTime, index) => {
+          if (judged.has(index)) return;
+          const delta = Math.abs(noteTime - t);
+          if (delta < bestDelta) {
+            bestDelta = delta;
+            bestIndex = index;
+          }
+        });
+
+        if (bestIndex >= 0 && bestDelta <= 0.28) {
+          judged.add(bestIndex);
+          combo += 1;
+          hit += 1;
+          score += Math.max(50, Math.round(160 - bestDelta * 300)) + combo * 5;
+          messageEl.textContent = bestDelta < 0.12 ? "Perfect cut." : "Good cut.";
+        } else {
+          combo = 0;
+          miss += 1;
+          score = Math.max(0, score - 35);
+          messageEl.textContent = "Late or early.";
+        }
+        syncHud();
+      }
+
+      function render() {
+        lane.querySelectorAll(".note").forEach((el) => el.remove());
+        const now = currentTime();
+        notes.forEach((noteTime, index) => {
+          if (judged.has(index)) return;
+          const delta = noteTime - now;
+          if (delta < -0.35 && active) {
+            judged.add(index);
+            combo = 0;
+            miss += 1;
+            syncHud();
+            return;
+          }
+          if (delta < -1 || delta > 3.2) return;
+          const note = document.createElement("div");
+          note.className = "note";
+          note.style.bottom = `${30 + delta * 68}px`;
+          lane.appendChild(note);
+        });
+        if (active) requestAnimationFrame(render);
+      }
+
+      startButton.addEventListener("click", async () => {
+        resetGame();
+        active = true;
+        await video.play().catch(() => {
+          messageEl.textContent = "Browser blocked playback. Click again.";
+        });
+        messageEl.textContent = "Run live.";
+        render();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.code === "Space") {
+          event.preventDefault();
+          judgeHit();
+        }
+        if (event.key.toLowerCase() === "r") resetGame();
+      });
+
+      video.addEventListener("ended", () => {
+        active = false;
+        messageEl.textContent = `Final score ${score}.`;
+      });
+
+      resetGame();
+    </script>
+  </body>
+  </html>

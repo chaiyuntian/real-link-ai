@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 2 | Freeze Frame Hunter</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: #fff7ee;
+        background:
+          radial-gradient(circle at top, rgba(255, 167, 88, 0.2), transparent 32%),
+          linear-gradient(180deg, #22170f, #090705 55%);
+      }
+      main {
+        width: min(1100px, calc(100% - 24px));
+        margin: 0 auto;
+        padding: 20px 0 40px;
+      }
+      .box {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 18px;
+      }
+      .panel {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      video {
+        width: 100%;
+        display: block;
+        border-radius: 16px;
+        background: #000;
+      }
+      button {
+        cursor: pointer;
+        border: 0;
+        padding: 12px 16px;
+        border-radius: 999px;
+        font-weight: 700;
+        background: #ffb86c;
+        color: #1e1208;
+      }
+      .timeline {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.08);
+        overflow: hidden;
+        margin: 16px 0;
+      }
+      .fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #ffb86c, #ffe69c);
+      }
+      .targets li {
+        margin-bottom: 8px;
+      }
+      @media (max-width: 920px) {
+        .box {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#ffb86c">Back</a></p>
+      <div class="box">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+          <div class="timeline"><div class="fill" id="fill"></div></div>
+        </section>
+        <aside class="panel">
+          <h1>Freeze Frame Hunter</h1>
+          <p>Each round names a dramatic cue window. Press <strong>F</strong> or the button to freeze inside that window.</p>
+          <ol class="targets" id="targets"></ol>
+          <p id="status">Round 1 waiting.</p>
+          <p>Score: <strong id="score">0</strong></p>
+          <button id="start">Start Hunt</button>
+          <button id="freeze">Freeze Now</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const rounds = [
+        { label: "Lock the first dramatic reveal", start: 1.8, end: 2.25 },
+        { label: "Catch the flight beat", start: 4.2, end: 4.55 },
+        { label: "Catch the dragon intensity moment", start: 7.5, end: 7.95 },
+        { label: "Catch the final push pose", start: 10.15, end: 10.55 }
+      ];
+
+      const video = document.getElementById("video");
+      const fill = document.getElementById("fill");
+      const targets = document.getElementById("targets");
+      const scoreEl = document.getElementById("score");
+      const statusEl = document.getElementById("status");
+      let roundIndex = 0;
+      let score = 0;
+      let live = false;
+
+      targets.innerHTML = rounds.map((round) => `<li>${round.label}</li>`).join("");
+
+      function reset() {
+        roundIndex = 0;
+        score = 0;
+        live = false;
+        video.pause();
+        video.currentTime = 0;
+        scoreEl.textContent = score;
+        statusEl.textContent = "Round 1 waiting.";
+        fill.style.width = "0%";
+      }
+
+      function freeze() {
+        if (!live) return;
+        video.pause();
+        const round = rounds[roundIndex];
+        const t = video.currentTime;
+        if (t >= round.start && t <= round.end) {
+          const precision = Math.min(t - round.start, round.end - t);
+          score += 150 + Math.round(precision * 100);
+          statusEl.textContent = `Hit: ${round.label}`;
+        } else {
+          statusEl.textContent = `Missed ${round.label}`;
+        }
+        scoreEl.textContent = score;
+        roundIndex += 1;
+        if (roundIndex >= rounds.length) {
+          live = false;
+          statusEl.textContent += ` | Final score ${score}`;
+          return;
+        }
+        setTimeout(() => {
+          statusEl.textContent = `Next: ${rounds[roundIndex].label}`;
+          video.play();
+        }, 700);
+      }
+
+      document.getElementById("start").addEventListener("click", async () => {
+        reset();
+        live = true;
+        statusEl.textContent = rounds[roundIndex].label;
+        await video.play().catch(() => {
+          statusEl.textContent = "Playback blocked. Click start again.";
+        });
+      });
+
+      document.getElementById("freeze").addEventListener("click", freeze);
+      document.addEventListener("keydown", (event) => {
+        if (event.key.toLowerCase() === "f") freeze();
+      });
+
+      video.addEventListener("timeupdate", () => {
+        const duration = video.duration || 1;
+        fill.style.width = `${(video.currentTime / duration) * 100}%`;
+      });
+
+      reset();
+    </script>
+  </body>
+  </html>

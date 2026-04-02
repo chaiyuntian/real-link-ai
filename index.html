@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>real-link-ai | Video Gameplay Lab</title>
+    <style>
+      :root {
+        --bg: #07111f;
+        --panel: rgba(10, 22, 38, 0.88);
+        --line: rgba(130, 189, 255, 0.2);
+        --text: #eaf4ff;
+        --muted: #8eb3d9;
+        --accent: #78f0c8;
+        --accent-2: #ff8f6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(50, 110, 188, 0.3), transparent 34%),
+          radial-gradient(circle at top right, rgba(255, 143, 107, 0.24), transparent 30%),
+          linear-gradient(180deg, #06101b 0%, #09182c 60%, #060b14 100%);
+      }
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 64px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 18px;
+        margin-bottom: 28px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-size: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(40px, 7vw, 72px);
+        line-height: 0.96;
+        max-width: 900px;
+      }
+
+      .sub {
+        max-width: 760px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        display: grid;
+        gap: 10px;
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 160ms ease, border-color 160ms ease;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(120, 240, 200, 0.45);
+      }
+
+      .card small {
+        color: var(--accent-2);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+
+      .card strong {
+        font-size: 24px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .pill {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="eyebrow">real-link-ai / gameplay lab</div>
+        <h1>One small video set, many playable ideas.</h1>
+        <p class="sub">
+          This repo turns three public clips into multiple browser-playable game loops:
+          rhythm, freeze timing, command decisions, glitch control, and speed-state
+          challenge.
+        </p>
+      </section>
+
+      <section class="grid">
+        <a class="card" href="./gameplay/issue-001-rhythm-cut/">
+          <small>Issue 1</small>
+          <strong>Rhythm Cut</strong>
+          <p>Hit visual impact beats in the Big Buck Bunny trailer.</p>
+        </a>
+        <a class="card" href="./gameplay/issue-002-freeze-frame-hunter/">
+          <small>Issue 2</small>
+          <strong>Freeze Frame Hunter</strong>
+          <p>Stop the Sintel trailer inside narrow target windows.</p>
+        </a>
+        <a class="card" href="./gameplay/issue-003-director-split/">
+          <small>Issue 3</small>
+          <strong>Director Split</strong>
+          <p>Make live command decisions over the Tears of Steel teaser.</p>
+        </a>
+        <a class="card" href="./gameplay/issue-004-glitch-chase/">
+          <small>Issue 4</small>
+          <strong>Glitch Chase</strong>
+          <p>Ride chaos zones with timed pauses, boosts, and recoveries.</p>
+        </a>
+        <a class="card" href="./gameplay/issue-005-remix-runner/">
+          <small>Issue 5</small>
+          <strong>Remix Runner</strong>
+          <p>Match section speed targets while Sintel keeps moving.</p>
+        </a>
+      </section>
+
+      <div class="meta">
+        <span class="pill">Run `bash scripts/download_videos.sh` first</span>
+        <span class="pill">Serve repo root with `python3 -m http.server 8000`</span>
+        <span class="pill">See `docs/brainstorm-log.md` for the ideation trail</span>
+      </div>
+    </main>
+  </body>
+  </html>

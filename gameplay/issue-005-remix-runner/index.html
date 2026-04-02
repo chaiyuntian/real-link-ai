@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 5 | Remix Runner</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: #effff8;
+        background: linear-gradient(180deg, #071f17, #040a08 60%);
+      }
+      main {
+        width: min(1120px, calc(100% - 24px));
+        margin: 0 auto;
+        padding: 20px 0 40px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 18px;
+      }
+      .panel {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      video {
+        width: 100%;
+        display: block;
+        border-radius: 16px;
+        background: #000;
+      }
+      button {
+        cursor: pointer;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 16px;
+        background: #7effcf;
+        color: #082219;
+        font-weight: 700;
+      }
+      .goal {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(126,255,207,0.08);
+      }
+      @media (max-width: 920px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#7effcf">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+        </section>
+        <aside class="panel">
+          <h1>Remix Runner</h1>
+          <p>Each section demands a target playback feel. Keep the trailer near the requested speed to earn points.</p>
+          <div class="goal" id="goal">Press start.</div>
+          <p>Playback speed: <strong id="speed">1.00</strong></p>
+          <p>Score: <strong id="score">0</strong></p>
+          <p><strong>J</strong> slower, <strong>K</strong> faster.</p>
+          <button id="start">Start Remix</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const phases = [
+        { until: 3.2, label: "Hold suspense at 0.75x", target: 0.75 },
+        { until: 6.5, label: "Push urgency to 1.25x", target: 1.25 },
+        { until: 9.5, label: "Return to cinematic 1.00x", target: 1.0 },
+        { until: 12.0, label: "Sprint ending at 1.5x", target: 1.5 }
+      ];
+      const video = document.getElementById("video");
+      const goalEl = document.getElementById("goal");
+      const speedEl = document.getElementById("speed");
+      const scoreEl = document.getElementById("score");
+      let score = 0;
+      let live = false;
+
+      function phaseForTime(t) {
+        return phases.find((phase) => t <= phase.until) || phases[phases.length - 1];
+      }
+
+      function updateHud() {
+        speedEl.textContent = Number(video.playbackRate).toFixed(2);
+        scoreEl.textContent = score;
+      }
+
+      document.getElementById("start").addEventListener("click", async () => {
+        score = 0;
+        live = true;
+        video.currentTime = 0;
+        video.playbackRate = 1;
+        updateHud();
+        goalEl.textContent = phases[0].label;
+        await video.play().catch(() => {
+          goalEl.textContent = "Playback blocked. Click start again.";
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (!live) return;
+        if (event.key.toLowerCase() === "j") {
+          video.playbackRate = Math.max(0.5, video.playbackRate - 0.1);
+          updateHud();
+        }
+        if (event.key.toLowerCase() === "k") {
+          video.playbackRate = Math.min(1.8, video.playbackRate + 0.1);
+          updateHud();
+        }
+      });
+
+      setInterval(() => {
+        if (!live) return;
+        const phase = phaseForTime(video.currentTime);
+        goalEl.textContent = phase.label;
+        const delta = Math.abs(video.playbackRate - phase.target);
+        score += Math.max(0, 20 - Math.round(delta * 40));
+        updateHud();
+      }, 300);
+
+      video.addEventListener("ended", () => {
+        live = false;
+        goalEl.textContent = `Remix done. Score ${score}.`;
+      });
+    </script>
+  </body>
+  </html>

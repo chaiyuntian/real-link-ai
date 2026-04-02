@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 3 | Director Split</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: #eef6ff;
+        background: linear-gradient(180deg, #0f1c31, #060a13 60%);
+      }
+      main {
+        width: min(1180px, calc(100% - 24px));
+        margin: 0 auto;
+        padding: 20px 0 40px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 18px;
+      }
+      .panel {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(167, 202, 255, 0.16);
+      }
+      video {
+        width: 100%;
+        display: block;
+        border-radius: 16px;
+        background: #000;
+      }
+      .options {
+        display: grid;
+        gap: 10px;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid rgba(167,202,255,0.2);
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.06);
+        color: inherit;
+        text-align: left;
+      }
+      .live {
+        color: #88ffd0;
+      }
+      @media (max-width: 920px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#88ffd0">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/tears-of-steel-teaser.mp4" preload="auto"></video>
+        </section>
+        <aside class="panel">
+          <h1>Director Split</h1>
+          <p>You are the command desk. When a cue arrives, choose the system action that best matches the clip tone.</p>
+          <p class="live" id="prompt">Press start.</p>
+          <p>Score: <strong id="score">0</strong></p>
+          <button id="start">Start Session</button>
+          <div class="options" id="options"></div>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const prompts = [
+        {
+          at: 2.2,
+          text: "Urban tension spike. Which system do you trigger?",
+          choices: [
+            { label: "Threat scan overlay", correct: true },
+            { label: "Comedic slow clap", correct: false },
+            { label: "Mute all sensors", correct: false }
+          ]
+        },
+        {
+          at: 5.0,
+          text: "Character focus rises. Your directorial response?",
+          choices: [
+            { label: "Push urgency markers", correct: true },
+            { label: "Cut to cooking show graphics", correct: false },
+            { label: "Loop the last second forever", correct: false }
+          ]
+        },
+        {
+          at: 8.0,
+          text: "Conflict escalates. Pick the command.",
+          choices: [
+            { label: "Deploy defense protocol", correct: true },
+            { label: "Change genre to beach episode", correct: false },
+            { label: "Pause everything for no reason", correct: false }
+          ]
+        }
+      ];
+
+      const video = document.getElementById("video");
+      const promptEl = document.getElementById("prompt");
+      const scoreEl = document.getElementById("score");
+      const optionsEl = document.getElementById("options");
+      const startEl = document.getElementById("start");
+      let score = 0;
+      let promptIndex = 0;
+      let sessionLive = false;
+      let answered = false;
+
+      function renderChoices(prompt) {
+        optionsEl.innerHTML = "";
+        prompt.choices.forEach((choice) => {
+          const button = document.createElement("button");
+          button.textContent = choice.label;
+          button.addEventListener("click", () => {
+            if (!sessionLive || answered) return;
+            answered = true;
+            if (choice.correct) {
+              score += 150;
+              promptEl.textContent = "Correct command.";
+            } else {
+              score = Math.max(0, score - 70);
+              promptEl.textContent = "Bad read. Recover on the next cue.";
+            }
+            scoreEl.textContent = score;
+            video.play();
+          });
+          optionsEl.appendChild(button);
+        });
+      }
+
+      startEl.addEventListener("click", async () => {
+        score = 0;
+        promptIndex = 0;
+        answered = false;
+        sessionLive = true;
+        scoreEl.textContent = score;
+        promptEl.textContent = "Desk live.";
+        optionsEl.innerHTML = "";
+        video.currentTime = 0;
+        await video.play().catch(() => {
+          promptEl.textContent = "Playback blocked. Click start again.";
+        });
+      });
+
+      video.addEventListener("timeupdate", () => {
+        if (!sessionLive || promptIndex >= prompts.length) return;
+        const prompt = prompts[promptIndex];
+        if (video.currentTime >= prompt.at) {
+          video.pause();
+          answered = false;
+          promptEl.textContent = prompt.text;
+          renderChoices(prompt);
+          promptIndex += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        sessionLive = false;
+        promptEl.textContent = `Session complete. Score ${score}.`;
+        optionsEl.innerHTML = "";
+      });
+    </script>
+  </body>
+  </html>
