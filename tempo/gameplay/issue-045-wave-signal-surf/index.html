@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 45 | Wave Signal Surf</title>
+    <style>
+      :root {
+        --bg: #03060b;
+        --panel: rgba(6, 12, 22, 0.82);
+        --line: rgba(128, 198, 255, 0.22);
+        --text: #eef8ff;
+        --muted: #a8c5d8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        overflow: hidden;
+        color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top left, rgba(151,222,255,.12), transparent 24%), linear-gradient(180deg, #03050a, #07111b 60%, #02050a 100%);
+      }
+      canvas { display: block; }
+      .hud, .panel {
+        position: fixed;
+        z-index: 2;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+      }
+      .hud {
+        top: 16px;
+        left: 16px;
+        right: 16px;
+        border-radius: 20px;
+        padding: 14px 16px;
+        display: grid;
+        grid-template-columns: 2fr repeat(5, 1fr);
+        gap: 12px;
+      }
+      .panel {
+        right: 16px;
+        bottom: 16px;
+        width: min(410px, calc(100% - 32px));
+        border-radius: 20px;
+        padding: 16px;
+      }
+      strong { display: block; margin-top: 4px; font-size: 28px; }
+      .small { color: var(--muted); line-height: 1.6; }
+      button, select {
+        width: 100%;
+        margin-top: 10px;
+        border-radius: 14px;
+        padding: 12px 14px;
+        font: inherit;
+      }
+      button {
+        border: 0;
+        cursor: pointer;
+        font-weight: 700;
+        color: #07111d;
+        background: #97deff;
+      }
+      select {
+        border: 1px solid rgba(255,255,255,.12);
+        color: inherit;
+        background: rgba(255,255,255,.06);
+      }
+      a { color: #97deff; }
+      @media (max-width: 980px) {
+        .hud { grid-template-columns: 1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hud">
+      <div>
+        <div>Wave Signal Surf</div>
+        <div class="small" id="section">Load the beat graph and start the wave run.</div>
+      </div>
+      <div>Score<strong id="score">0</strong></div>
+      <div>Combo<strong id="combo">0</strong></div>
+      <div>Misses<strong id="misses">0</strong></div>
+      <div>Relays<strong id="relays">0</strong></div>
+      <div>Drift<strong id="drift">0.00</strong></div>
+    </div>
+
+    <div class="panel">
+      <p><a href="../../index.html">Back to tempo</a></p>
+      <p class="small">`WASD` moves the surfer on the wavefield. Reach the glowing relay node on the exact beat to capture it. Intro is sparse scouting, lift adds alternating side pressure, drop creates doubled relay chains across the surface.</p>
+      <label class="small" for="difficulty">Difficulty</label>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+      <p class="small" id="ending"></p>
+      <button id="start">Start Surf</button>
+    </div>
+
+    <script type="module">
+      import * as THREE from "https://unpkg.com/three@0.170.0/build/three.module.js";
+      import { EffectComposer } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/EffectComposer.js";
+      import { RenderPass } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/RenderPass.js";
+      import { UnrealBloomPass } from "https://unpkg.com/three@0.170.0/examples/jsm/postprocessing/UnrealBloomPass.js";
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03060b);
+      scene.fog = new THREE.FogExp2(0x04070d, 0.022);
+
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 34, 50);
+      camera.lookAt(0, 0, 0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      const composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+      const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.3, 0.9);
+      bloomPass.threshold = 0.0;
+      bloomPass.strength = 0.85;
+      bloomPass.radius = 0.35;
+      composer.addPass(bloomPass);
+
+      const ambient = new THREE.AmbientLight(0x85b4ff, 1.3);
+      const directional = new THREE.DirectionalLight(0x97deff, 1.6);
+      directional.position.set(22, 40, 10);
+      scene.add(ambient, directional);
+
+      const gridSize = 28;
+      const spacing = 2.1;
+      const count = gridSize * gridSize;
+      const cellGeometry = new THREE.BoxGeometry(1.2, 1, 1.2);
+      const cellMaterial = new THREE.MeshStandardMaterial({
+        color: 0x091622,
+        emissive: 0x122b43,
+        metalness: 0.18,
+        roughness: 0.35
+      });
+      const grid = new THREE.InstancedMesh(cellGeometry, cellMaterial, count);
+      scene.add(grid);
+
+      const basePositions = [];
+      const matrix = new THREE.Matrix4();
+      let index = 0;
+      for (let z = 0; z < gridSize; z += 1) {
+        for (let x = 0; x < gridSize; x += 1) {
+          const px = (x - (gridSize - 1) / 2) * spacing;
+          const pz = (z - (gridSize - 1) / 2) * spacing;
+          basePositions.push({ x: px, z: pz });
+          matrix.makeTranslation(px, 0, pz);
+          grid.setMatrixAt(index, matrix);
+          index += 1;
+        }
+      }
+      grid.instanceMatrix.needsUpdate = true;
+
+      const waterPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(220, 220, 1, 1),
+        new THREE.MeshBasicMaterial({ color: 0x081522, transparent: true, opacity: 0.52 })
+      );
+      waterPlane.rotation.x = -Math.PI / 2;
+      waterPlane.position.y = -0.7;
+      scene.add(waterPlane);
+
+      const surfer = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1.2, 1),
+        new THREE.MeshStandardMaterial({
+          color: 0x86ffd3,
+          emissive: 0x0a4c3e,
+          metalness: 0.1,
+          roughness: 0.15
+        })
+      );
+      surfer.position.set(0, 2.6, 0);
+      scene.add(surfer);
+
+      const trailGeometry = new THREE.RingGeometry(1.8, 2.2, 48);
+      const trailMaterial = new THREE.MeshBasicMaterial({ color: 0x97deff, transparent: true, opacity: 0.32, side: THREE.DoubleSide });
+      const trail = new THREE.Mesh(trailGeometry, trailMaterial);
+      trail.rotation.x = -Math.PI / 2;
+      trail.position.y = 0.05;
+      scene.add(trail);
+
+      const relayGeometry = new THREE.OctahedronGeometry(1.6, 0);
+      const relayMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffb26f,
+        emissive: 0x612600,
+        metalness: 0.1,
+        roughness: 0.22
+      });
+      const relayMesh = new THREE.Mesh(relayGeometry, relayMaterial);
+      relayMesh.visible = false;
+      scene.add(relayMesh);
+
+      const relayHalo = new THREE.Mesh(
+        new THREE.TorusGeometry(2.7, 0.08, 12, 64),
+        new THREE.MeshBasicMaterial({ color: 0xffb26f, transparent: true, opacity: 0.8 })
+      );
+      relayHalo.rotation.x = Math.PI / 2;
+      relayHalo.visible = false;
+      scene.add(relayHalo);
+
+      const scoreEl = document.getElementById("score");
+      const comboEl = document.getElementById("combo");
+      const missesEl = document.getElementById("misses");
+      const relaysEl = document.getElementById("relays");
+      const driftEl = document.getElementById("drift");
+      const sectionEl = document.getElementById("section");
+      const endingEl = document.getElementById("ending");
+      const difficultyEl = document.getElementById("difficulty");
+
+      const audio = new Audio("/tempo-audio/tempo/tempo-batch1.wav");
+      audio.crossOrigin = "anonymous";
+
+      const state = {
+        analysis: null,
+        live: false,
+        score: 0,
+        combo: 0,
+        misses: 0,
+        relays: 0,
+        amplitude: 2.2,
+        playerSpeed: 22,
+        captureRadius: 4.7,
+        beatWindow: 0.18,
+        surferPos: new THREE.Vector2(0, 0),
+        keys: new Set(),
+        targets: [],
+        activeRelay: null
+      };
+
+      function syncHud() {
+        scoreEl.textContent = state.score;
+        comboEl.textContent = state.combo;
+        missesEl.textContent = state.misses;
+        relaysEl.textContent = state.relays;
+      }
+
+      function sampleWave(x, z, time) {
+        const phaseA = Math.sin((x * 0.24) + (time * 1.8));
+        const phaseB = Math.cos((z * 0.22) - (time * 1.4));
+        const phaseC = Math.sin(((x + z) * 0.12) + (time * 0.9));
+        return (phaseA + phaseB + phaseC) * state.amplitude;
+      }
+
+      function waveNormal(x, z, time) {
+        const e = 0.35;
+        const hL = sampleWave(x - e, z, time);
+        const hR = sampleWave(x + e, z, time);
+        const hD = sampleWave(x, z - e, time);
+        const hU = sampleWave(x, z + e, time);
+        const normal = new THREE.Vector3(hL - hR, 2 * e, hD - hU);
+        return normal.normalize();
+      }
+
+      function sectionForTime(time) {
+        if (!state.analysis) return null;
+        return state.analysis.sections.find((section) => time >= section.start && time < section.end) || state.analysis.sections.at(-1);
+      }
+
+      function buildTargets() {
+        const targets = [];
+        const difficulty = difficultyEl.value;
+        const beatStep = difficulty === "easy" ? 2 : 1;
+        let laneCursor = 0;
+
+        state.analysis.beats.forEach((beat, beatIndex) => {
+          if (beatIndex % beatStep !== 0) return;
+          const section = sectionForTime(beat);
+          const radius = section.label === "drop" ? 18 : section.label === "lift" ? 15 : 12;
+          const angle = ((beatIndex * 0.73) + laneCursor * 0.4) % (Math.PI * 2);
+          laneCursor += section.label === "drop" ? 2 : 1;
+          targets.push({
+            beat,
+            x: Math.cos(angle) * radius,
+            z: Math.sin(angle) * radius,
+            chain: false,
+            hit: false,
+            missed: false
+          });
+
+          if (section.label === "lift" && beatIndex % 4 === 0) {
+            targets.push({
+              beat: Number((beat + 0.22).toFixed(3)),
+              x: -Math.cos(angle) * (radius - 2),
+              z: -Math.sin(angle) * (radius - 2),
+              chain: true,
+              hit: false,
+              missed: false
+            });
+          }
+
+          if (section.label === "drop" && beatIndex % 5 === 0) {
+            targets.push({
+              beat: Number((beat + 0.17).toFixed(3)),
+              x: Math.cos(angle + 0.8) * (radius + 2.5),
+              z: Math.sin(angle + 0.8) * (radius + 2.5),
+              chain: true,
+              hit: false,
+              missed: false
+            });
+          }
+        });
+
+        state.targets = targets.sort((a, b) => a.beat - b.beat);
+      }
+
+      async function init() {
+        if (state.analysis) return;
+        const response = await fetch("../../analysis/tempo-batch1-analysis.json");
+        state.analysis = await response.json();
+        sectionEl.textContent = `Estimated BPM ${state.analysis.estimatedBpm}. Wavefield ready with ${state.analysis.beatCount} beat anchors.`;
+        buildTargets();
+      }
+
+      function resetRun() {
+        state.score = 0;
+        state.combo = 0;
+        state.misses = 0;
+        state.relays = 0;
+        state.surferPos.set(0, 0);
+        trail.scale.setScalar(1);
+        endingEl.textContent = "";
+        state.targets.forEach((target) => {
+          target.hit = false;
+          target.missed = false;
+        });
+        state.activeRelay = null;
+        syncHud();
+      }
+
+      document.getElementById("start").onclick = async () => {
+        await init();
+        if (difficultyEl.value === "easy") {
+          state.playerSpeed = 24;
+          state.captureRadius = 5.6;
+          state.beatWindow = 0.23;
+          state.amplitude = 1.9;
+        } else if (difficultyEl.value === "hard") {
+          state.playerSpeed = 27;
+          state.captureRadius = 3.9;
+          state.beatWindow = 0.13;
+          state.amplitude = 2.8;
+        } else {
+          state.playerSpeed = 25;
+          state.captureRadius = 4.7;
+          state.beatWindow = 0.18;
+          state.amplitude = 2.3;
+        }
+        buildTargets();
+        resetRun();
+        state.live = true;
+        audio.currentTime = 0;
+        await audio.play().catch(() => {
+          state.live = false;
+          sectionEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      audio.addEventListener("ended", () => {
+        state.live = false;
+        if (state.relays >= 26 && state.combo >= 8) {
+          endingEl.textContent = "Result: the wavegrid locks into phase. You turned the song into a navigable current.";
+        } else if (state.score >= 2600) {
+          endingEl.textContent = "Result: the surf line mostly holds. Sections connect, but the drop still frays.";
+        } else {
+          endingEl.textContent = "Result: the wave stayed beautiful, but not controlled enough to carry the relay chain.";
+        }
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (["KeyW", "KeyA", "KeyS", "KeyD"].includes(event.code)) state.keys.add(event.code);
+      });
+      window.addEventListener("keyup", (event) => {
+        state.keys.delete(event.code);
+      });
+
+      function updatePlayer(delta, now) {
+        let moveX = 0;
+        let moveZ = 0;
+        if (state.keys.has("KeyA")) moveX -= 1;
+        if (state.keys.has("KeyD")) moveX += 1;
+        if (state.keys.has("KeyW")) moveZ -= 1;
+        if (state.keys.has("KeyS")) moveZ += 1;
+        const move = new THREE.Vector2(moveX, moveZ);
+        if (move.lengthSq() > 0) move.normalize().multiplyScalar(state.playerSpeed * delta);
+        state.surferPos.add(move);
+        state.surferPos.x = THREE.MathUtils.clamp(state.surferPos.x, -24, 24);
+        state.surferPos.y = THREE.MathUtils.clamp(state.surferPos.y, -24, 24);
+
+        const y = sampleWave(state.surferPos.x, state.surferPos.y, now);
+        const normal = waveNormal(state.surferPos.x, state.surferPos.y, now);
+        surfer.position.set(state.surferPos.x, y + 3, state.surferPos.y);
+        trail.position.set(state.surferPos.x, y + 0.1, state.surferPos.y);
+        surfer.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+        surfer.rotateY(now * 2);
+      }
+
+      function updateWave(now) {
+        const activeSection = sectionForTime(now);
+        const sectionBoost = activeSection?.label === "drop" ? 1.35 : activeSection?.label === "lift" ? 1.12 : 0.92;
+        const relayBoost = state.activeRelay ? Math.max(0, 1 - Math.abs(state.activeRelay.beat - now) * 3) : 0;
+        const effectiveAmplitude = state.amplitude * sectionBoost + relayBoost * 1.4;
+        const color = activeSection?.label === "drop" ? 0x183f61 : activeSection?.label === "lift" ? 0x12324e : 0x0d2236;
+        grid.material.emissive.setHex(color);
+
+        for (let i = 0; i < count; i += 1) {
+          const cell = basePositions[i];
+          const y = (
+            Math.sin((cell.x * 0.24) + (now * 1.8)) +
+            Math.cos((cell.z * 0.22) - (now * 1.4)) +
+            Math.sin(((cell.x + cell.z) * 0.12) + (now * 0.9))
+          ) * effectiveAmplitude;
+          matrix.makeScale(1, Math.max(0.2, (y + 8) / 6), 1);
+          matrix.setPosition(cell.x, y * 0.5, cell.z);
+          grid.setMatrixAt(i, matrix);
+        }
+        grid.instanceMatrix.needsUpdate = true;
+      }
+
+      function updateTargets(now) {
+        const nextTarget = state.targets.find((target) => !target.hit && !target.missed && now <= target.beat + state.beatWindow);
+        state.activeRelay = nextTarget || null;
+
+        relayMesh.visible = Boolean(nextTarget);
+        relayHalo.visible = Boolean(nextTarget);
+
+        if (nextTarget) {
+          const relayY = sampleWave(nextTarget.x, nextTarget.z, now) + 3.6;
+          relayMesh.position.set(nextTarget.x, relayY, nextTarget.z);
+          relayMesh.rotation.x += 0.02;
+          relayMesh.rotation.y += 0.05;
+          relayHalo.position.set(nextTarget.x, relayY - 1.6, nextTarget.z);
+          relayHalo.rotation.z += 0.03;
+
+          const distance = Math.hypot(nextTarget.x - state.surferPos.x, nextTarget.z - state.surferPos.y);
+          const beatDelta = Math.abs(nextTarget.beat - now);
+          driftEl.textContent = distance.toFixed(2);
+
+          if (!nextTarget.hit && !nextTarget.missed && beatDelta <= state.beatWindow && distance <= state.captureRadius) {
+            nextTarget.hit = true;
+            state.relays += 1;
+            state.combo += 1;
+            state.score += nextTarget.chain ? 150 : 100;
+            trail.scale.setScalar(1.5);
+            syncHud();
+          } else if (!nextTarget.hit && !nextTarget.missed && now > nextTarget.beat + state.beatWindow) {
+            nextTarget.missed = true;
+            state.combo = 0;
+            state.misses += 1;
+            syncHud();
+          }
+        } else {
+          driftEl.textContent = "0.00";
+        }
+      }
+
+      let lastTime = performance.now();
+      function animate(nowMs) {
+        requestAnimationFrame(animate);
+        const now = state.live ? audio.currentTime : 0;
+        const delta = Math.min(0.033, (nowMs - lastTime) / 1000);
+        lastTime = nowMs;
+
+        updatePlayer(delta, now);
+        updateWave(now);
+        updateTargets(now);
+
+        trail.scale.lerp(new THREE.Vector3(1, 1, 1), 0.09);
+        trail.material.opacity = 0.26 + Math.sin(now * 3.5) * 0.08;
+
+        const activeSection = sectionForTime(now);
+        if (activeSection) {
+          sectionEl.textContent = `${activeSection.label.toUpperCase()} | move across the field to meet the next relay on beat | ${now.toFixed(2)}s`;
+        }
+
+        camera.position.x = THREE.MathUtils.lerp(camera.position.x, state.surferPos.x * 0.32, 0.04);
+        camera.position.z = THREE.MathUtils.lerp(camera.position.z, 50 + state.surferPos.y * 0.2, 0.04);
+        camera.lookAt(state.surferPos.x, 0, state.surferPos.y);
+
+        composer.render();
+      }
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      syncHud();
+      animate(performance.now());
+    </script>
+  </body>
+  </html>
