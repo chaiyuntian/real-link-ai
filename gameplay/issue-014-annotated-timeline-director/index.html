@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 14 | Annotated Timeline Director</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#eefcff; background:linear-gradient(180deg,#081425,#03070e 62%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.05); border:1px solid rgba(140,213,255,.16); }
+      video { width:100%; border-radius:16px; display:block; background:#000; }
+      .timeline { position:relative; height:18px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:14px; }
+      .seg { position:absolute; top:0; bottom:0; opacity:.88; }
+      .seg.setup { background:#70c8ff; }
+      .seg.threat { background:#ff8c70; }
+      .seg.reveal { background:#d392ff; }
+      .seg.resolve { background:#7effc8; }
+      .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
+      .choice { cursor:pointer; border:0; border-radius:14px; padding:12px 14px; background:#9bdfff; color:#071524; font-weight:700; text-align:left; width:100%; margin-top:10px; }
+      .copy { color:#b8d2e2; line-height:1.55; min-height:72px; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9bdfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+          <div class="timeline" id="timeline"></div>
+          <div class="stats">
+            <div>Clarity<br /><strong id="clarity">0</strong></div>
+            <div>Urgency<br /><strong id="urgency">0</strong></div>
+            <div>Myth<br /><strong id="myth">0</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h1>Annotated Timeline Director</h1>
+          <p class="copy" id="copy">This demo is driven by timeline annotations. Segment labels are the gameplay backbone.</p>
+          <p id="prompt">Load the annotation graph and start.</p>
+          <div id="choices"></div>
+          <p id="ending"></p>
+          <button class="choice" id="start">Start Directed Run</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const state = { clarity: 0, urgency: 0, myth: 0 };
+      let graph = null;
+      let idx = 0;
+      let awaiting = false;
+      let live = false;
+      const video = document.getElementById("video");
+      const timelineEl = document.getElementById("timeline");
+      const copyEl = document.getElementById("copy");
+      const promptEl = document.getElementById("prompt");
+      const choicesEl = document.getElementById("choices");
+      const endingEl = document.getElementById("ending");
+      const clarityEl = document.getElementById("clarity");
+      const urgencyEl = document.getElementById("urgency");
+      const mythEl = document.getElementById("myth");
+
+      function syncState() {
+        clarityEl.textContent = state.clarity;
+        urgencyEl.textContent = state.urgency;
+        mythEl.textContent = state.myth;
+      }
+
+      function renderTimeline(segments) {
+        timelineEl.innerHTML = "";
+        const maxEnd = Math.max(...segments.map((segment) => segment.end));
+        segments.forEach((segment) => {
+          const el = document.createElement("div");
+          el.className = `seg ${segment.label}`;
+          el.style.left = `${(segment.start / maxEnd) * 100}%`;
+          el.style.width = `${((segment.end - segment.start) / maxEnd) * 100}%`;
+          el.title = `${segment.label}: ${segment.story_function}`;
+          timelineEl.appendChild(el);
+        });
+      }
+
+      function renderChoices(segment) {
+        choicesEl.innerHTML = "";
+        segment.choices.forEach((choice) => {
+          const button = document.createElement("button");
+          button.className = "choice";
+          button.textContent = choice.label;
+          button.onclick = () => {
+            if (!awaiting) return;
+            awaiting = false;
+            Object.entries(choice.effects).forEach(([key, value]) => {
+              state[key] += value;
+            });
+            syncState();
+            promptEl.textContent = `Decision committed: ${choice.label}`;
+            choicesEl.innerHTML = "";
+            video.play();
+          };
+          choicesEl.appendChild(button);
+        });
+      }
+
+      function computeEnding() {
+        if (state.clarity >= 4 && state.urgency <= 3) return graph.endings.coherent_hunt;
+        if (state.urgency >= 4 && state.clarity <= 2) return graph.endings.frantic_fragment;
+        return graph.endings.mythic_wound;
+      }
+
+      async function init() {
+        const response = await fetch("../../narrative/story-beats/sintel-annotated-director.json");
+        graph = await response.json();
+        renderTimeline(graph.segments);
+        copyEl.textContent = "Annotations loaded. `setup`, `threat`, `reveal`, and `resolve` will now pause the video and ask for plot-aware direction.";
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!graph) await init();
+        state.clarity = 0;
+        state.urgency = 0;
+        state.myth = 0;
+        syncState();
+        idx = 0;
+        awaiting = false;
+        live = true;
+        endingEl.textContent = "";
+        promptEl.textContent = "Run live.";
+        choicesEl.innerHTML = "";
+        video.currentTime = 0;
+        await video.play().catch(() => {
+          promptEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || awaiting || !graph || idx >= graph.segments.length) return;
+        const segment = graph.segments[idx];
+        if (video.currentTime >= segment.start) {
+          awaiting = true;
+          video.pause();
+          copyEl.textContent = `Segment ${segment.label}: ${segment.story_function}`;
+          promptEl.textContent = segment.prompt;
+          renderChoices(segment);
+          idx += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        endingEl.textContent = computeEnding();
+      });
+
+      init();
+    </script>
+  </body>
+  </html>

@@ -1,0 +1,115 @@
+{
+  "title": "Sintel Annotated Director",
+  "video": "sintel-trailer.mp4",
+  "segments": [
+    {
+      "id": "seg-1",
+      "start": 0.8,
+      "end": 3.3,
+      "label": "setup",
+      "story_function": "mission_seed",
+      "prompt": "The story is forming its promise. What directorial choice best preserves emotional clarity?",
+      "choices": [
+        {
+          "label": "Hold on vulnerability",
+          "effects": {
+            "clarity": 2,
+            "urgency": -1,
+            "myth": 1
+          }
+        },
+        {
+          "label": "Rush into threat",
+          "effects": {
+            "clarity": -1,
+            "urgency": 2,
+            "myth": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "seg-2",
+      "start": 3.3,
+      "end": 6.7,
+      "label": "threat",
+      "story_function": "escalation",
+      "prompt": "Danger tightens. Which cut logic strengthens the plot instead of flattening it?",
+      "choices": [
+        {
+          "label": "Accelerate the chase",
+          "effects": {
+            "clarity": 0,
+            "urgency": 2,
+            "myth": -1
+          }
+        },
+        {
+          "label": "Protect spatial logic",
+          "effects": {
+            "clarity": 2,
+            "urgency": 0,
+            "myth": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "seg-3",
+      "start": 6.7,
+      "end": 9.6,
+      "label": "reveal",
+      "story_function": "mythic_weight",
+      "prompt": "The trailer reaches symbolic intensity. Which interpretation do you push?",
+      "choices": [
+        {
+          "label": "Make it personal",
+          "effects": {
+            "clarity": 1,
+            "urgency": 0,
+            "myth": 2
+          }
+        },
+        {
+          "label": "Make it purely tactical",
+          "effects": {
+            "clarity": 0,
+            "urgency": 1,
+            "myth": -2
+          }
+        }
+      ]
+    },
+    {
+      "id": "seg-4",
+      "start": 9.6,
+      "end": 12,
+      "label": "resolve",
+      "story_function": "payoff",
+      "prompt": "The ending beat lands. How do you frame the payoff?",
+      "choices": [
+        {
+          "label": "Resolve the vow",
+          "effects": {
+            "clarity": 2,
+            "urgency": 0,
+            "myth": 1
+          }
+        },
+        {
+          "label": "Leave the wound open",
+          "effects": {
+            "clarity": -1,
+            "urgency": 1,
+            "myth": 2
+          }
+        }
+      ]
+    }
+  ],
+  "endings": {
+    "coherent_hunt": "You directed the trailer into a coherent hunt: legible stakes, intact escalation, and earned payoff.",
+    "frantic_fragment": "You chased urgency too hard. The plot still moves, but it now reads as panic and fragmentation.",
+    "mythic_wound": "You leaned into symbolic weight and left the story bleeding open into myth."
+  }
+}

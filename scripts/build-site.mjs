@@ -19,13 +19,16 @@ const filesToCopy = [
   "gameplay/issue-010-emotion-switchboard/index.html",
   "gameplay/issue-011-narrative-grounding-ops/index.html",
   "gameplay/issue-012-reverse-causality-tribunal/index.html",
-  "gameplay/issue-013-tempo-fate-engine/index.html"
+  "gameplay/issue-013-tempo-fate-engine/index.html",
+  "gameplay/issue-014-annotated-timeline-director/index.html"
 ];
 
 const dataFilesToCopy = [
   "narrative/story-beats/tears-of-steel-ops.json",
   "narrative/story-beats/sintel-causality.json",
-  "narrative/story-beats/sintel-tempo-fate.json"
+  "narrative/story-beats/sintel-tempo-fate.json",
+  "narrative/story-beats/sintel-annotated-director.json",
+  "annotation-exports/sintel-director-labelstudio-like.json"
 ];
 
 async function ensureCleanDist() {
