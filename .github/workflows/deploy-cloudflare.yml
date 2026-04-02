@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: read
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       VIDEO_BASE_URL: https://videos-batch1.real-link.ai
       BUCKET_NAME: real-link-ai-ideas-batch1-videos
     steps:
@@ -21,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
