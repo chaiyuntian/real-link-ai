@@ -67,6 +67,7 @@ After that, every push to `main` will:
 - Issue 12: `Reverse Causality Tribunal`
 - Issue 13: `Tempo Fate Engine`
 - Issue 14: `Annotated Timeline Director`
+- Issue 16: `AI Plot Forensics`
 
 ## Repo structure
 
@@ -75,7 +76,9 @@ After that, every push to `main` will:
 - `docs/issue-map.md`: issue to prototype mapping
 - `docs/interactive-story-datasets.md`: narrative dataset research and integration notes
 - `docs/timeline-annotation-pipeline.md`: annotation-tool to gameplay pipeline
+- `docs/video-discovery-and-understanding.md`: sourcing and offline AI-understanding workflow
 - `gameplay/`: standalone gameplay folders
 - `narrative/story-beats/`: time-aligned story state data used by narrative-heavy prototypes
+- `analysis/`: offline AI-generated video understanding artifacts
 - `annotation-exports/`: export-like timeline annotations before normalization
 - `scripts/download_videos.sh`: reproducible asset download script

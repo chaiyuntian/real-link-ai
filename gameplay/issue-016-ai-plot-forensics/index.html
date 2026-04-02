@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 16 | AI Plot Forensics</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#eef9ff; background:linear-gradient(180deg,#091220,#03060b 60%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.05); border:1px solid rgba(139,208,255,.16); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      button { cursor:pointer; border:0; border-radius:14px; padding:12px 14px; background:#9adfff; color:#061422; font-weight:700; text-align:left; width:100%; margin-top:10px; }
+      .copy { color:#b6d0df; line-height:1.55; min-height:78px; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9adfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+        </section>
+        <aside class="panel">
+          <h1>AI Plot Forensics</h1>
+          <p class="copy" id="copy">This game uses AI only during production. Gameplay reads a saved understanding artifact generated before publish.</p>
+          <p>Score: <strong id="score">0</strong></p>
+          <p id="prompt">Load the forensic brief.</p>
+          <div id="choices"></div>
+          <p id="ending"></p>
+          <button id="start">Start Forensics Run</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const video = document.getElementById("video");
+      const copyEl = document.getElementById("copy");
+      const promptEl = document.getElementById("prompt");
+      const choicesEl = document.getElementById("choices");
+      const endingEl = document.getElementById("ending");
+      const scoreEl = document.getElementById("score");
+
+      let analysis = null;
+      let beats = [];
+      let index = 0;
+      let score = 0;
+      let live = false;
+      let awaiting = false;
+
+      function renderChoices(beat) {
+        choicesEl.innerHTML = "";
+        beat.options.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option.label;
+          button.onclick = () => {
+            if (!awaiting) return;
+            awaiting = false;
+            if (option.correct) {
+              score += 170;
+              promptEl.textContent = "Matches the forensic reading.";
+            } else {
+              score = Math.max(0, score - 40);
+              promptEl.textContent = "Weak reading.";
+            }
+            scoreEl.textContent = score;
+            choicesEl.innerHTML = "";
+            video.play();
+          };
+          choicesEl.appendChild(button);
+        });
+      }
+
+      async function init() {
+        const response = await fetch("../../analysis/fal/sintel-trailer-understanding.json");
+        analysis = await response.json();
+        const brief = analysis?.result?.data?.output || "";
+        const lower = brief.toLowerCase();
+
+        const hasCompanion = lower.includes("companion");
+        const hasSurvival = lower.includes("survival") || lower.includes("harsh");
+        const hasPursuit = lower.includes("pursuit") || lower.includes("quest");
+        const hasConfrontation = lower.includes("confrontation") || lower.includes("payoff");
+
+        beats = [
+          {
+            at: 2.4,
+            prompt: hasSurvival
+              ? "The forensic brief highlights harsh-environment survival. What reading best fits this opening?"
+              : "The forensic brief sees a serious journey beginning. What reading best fits this opening?",
+            options: [
+              { label: hasPursuit ? "A mission is forming around loss or obligation" : "A hard journey is being established", correct: true },
+              { label: "The clip is comedic filler with no stakes", correct: false },
+              { label: "The scene is purely environmental and detached", correct: false }
+            ]
+          },
+          {
+            at: 5.6,
+            prompt: hasPursuit
+              ? "The brief frames the middle as quest pressure and pursuit. What causal interpretation fits best?"
+              : "The brief frames the middle as escalation. What causal interpretation fits best?",
+            options: [
+              { label: "Threat pressure is compressing the hero into pursuit", correct: true },
+              { label: "The trailer is relaxing into slice-of-life pacing", correct: false },
+              { label: "Nothing changes except camera speed", correct: false }
+            ]
+          },
+          {
+            at: 8.8,
+            prompt: hasCompanion
+              ? "The brief emphasizes loss and the companion bond. Which final reading is strongest?"
+              : "The brief emphasizes payoff and confrontation. Which final reading is strongest?",
+            options: [
+              { label: hasConfrontation ? "The story is pushing toward confrontation and payoff" : "The story is paying off a painful objective", correct: true },
+              { label: "The clip is abandoning plot for abstraction", correct: false },
+              { label: "The trailer is signaling comic relief", correct: false }
+            ]
+          }
+        ];
+
+        copyEl.textContent = brief.slice(0, 320) + (brief.length > 320 ? "..." : "");
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!analysis) await init();
+        index = 0;
+        score = 0;
+        scoreEl.textContent = score;
+        promptEl.textContent = "Forensics live.";
+        endingEl.textContent = "";
+        live = true;
+        awaiting = false;
+        video.currentTime = 0;
+        await video.play().catch(() => {
+          promptEl.textContent = "Playback blocked. Click start again.";
+        });
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || awaiting || index >= beats.length) return;
+        const beat = beats[index];
+        if (video.currentTime >= beat.at) {
+          awaiting = true;
+          video.pause();
+          promptEl.textContent = beat.prompt;
+          renderChoices(beat);
+          index += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        endingEl.textContent = score >= 400
+          ? "Ending: you stayed aligned with the offline story analysis and reconstructed the trailer cleanly."
+          : "Ending: your readings drifted away from the forensic brief and the plot stayed unresolved.";
+      });
+
+      init();
+    </script>
+  </body>
+  </html>

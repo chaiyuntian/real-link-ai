@@ -16,5 +16,6 @@ The first wave maps GitHub issues to playable folders like this:
 - Issue #12 `Reverse Causality Tribunal` -> `gameplay/issue-012-reverse-causality-tribunal/`
 - Issue #13 `Tempo Fate Engine` -> `gameplay/issue-013-tempo-fate-engine/`
 - Issue #14 `Annotated Timeline Director` -> `gameplay/issue-014-annotated-timeline-director/`
+- Issue #16 `AI Plot Forensics` -> `gameplay/issue-016-ai-plot-forensics/`
 
-All five prototypes are standalone and can be launched from the repo root index page.
+All prototypes are standalone and can be launched from the repo root index page.

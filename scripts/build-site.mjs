@@ -20,7 +20,8 @@ const filesToCopy = [
   "gameplay/issue-011-narrative-grounding-ops/index.html",
   "gameplay/issue-012-reverse-causality-tribunal/index.html",
   "gameplay/issue-013-tempo-fate-engine/index.html",
-  "gameplay/issue-014-annotated-timeline-director/index.html"
+  "gameplay/issue-014-annotated-timeline-director/index.html",
+  "gameplay/issue-016-ai-plot-forensics/index.html"
 ];
 
 const dataFilesToCopy = [
@@ -28,7 +29,8 @@ const dataFilesToCopy = [
   "narrative/story-beats/sintel-causality.json",
   "narrative/story-beats/sintel-tempo-fate.json",
   "narrative/story-beats/sintel-annotated-director.json",
-  "annotation-exports/sintel-director-labelstudio-like.json"
+  "annotation-exports/sintel-director-labelstudio-like.json",
+  "analysis/fal/sintel-trailer-understanding.json"
 ];
 
 async function ensureCleanDist() {
