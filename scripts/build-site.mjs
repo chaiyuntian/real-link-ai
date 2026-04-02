@@ -22,6 +22,7 @@ const filesToCopy = [
   "gameplay/issue-013-tempo-fate-engine/index.html",
   "gameplay/issue-014-annotated-timeline-director/index.html",
   "gameplay/issue-016-ai-plot-forensics/index.html",
+  "gameplay/issue-018-point-driven-fate-cuts/index.html",
   "tools/gameplay-point-studio/index.html"
 ];
 
@@ -31,7 +32,8 @@ const dataFilesToCopy = [
   "narrative/story-beats/sintel-tempo-fate.json",
   "narrative/story-beats/sintel-annotated-director.json",
   "annotation-exports/sintel-director-labelstudio-like.json",
-  "analysis/fal/sintel-trailer-understanding.json"
+  "analysis/fal/sintel-trailer-understanding.json",
+  "gameplay-points/sintel-fate-cuts.json"
 ];
 
 async function ensureCleanDist() {

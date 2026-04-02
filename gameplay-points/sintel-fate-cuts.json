@@ -1,0 +1,32 @@
+{
+  "video": "sintel-trailer.mp4",
+  "createdAt": "2026-04-02T03:35:00.000Z",
+  "items": [
+    {
+      "type": "point",
+      "label": "decision",
+      "time": 2.2,
+      "prompt": "Hold on vulnerability or push immediately toward danger?"
+    },
+    {
+      "type": "segment",
+      "label": "danger",
+      "start": 3.6,
+      "end": 6.4,
+      "prompt": "This is the pursuit pressure segment. Aggressive readings gain urgency, cautious readings gain clarity."
+    },
+    {
+      "type": "point",
+      "label": "reveal",
+      "time": 7.8,
+      "prompt": "Frame this moment as personal myth or tactical conflict?"
+    },
+    {
+      "type": "segment",
+      "label": "payoff",
+      "start": 9.6,
+      "end": 11.8,
+      "prompt": "The ending segment determines whether the cut reads as resolve or fracture."
+    }
+  ]
+}

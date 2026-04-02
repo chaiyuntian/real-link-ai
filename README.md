@@ -69,6 +69,7 @@ After that, every push to `main` will:
 - Issue 14: `Annotated Timeline Director`
 - Issue 16: `AI Plot Forensics`
 - Issue 17: `Gameplay Point Studio`
+- Issue 18: `Point-Driven Fate Cuts`
 
 ## Repo structure
 
@@ -84,4 +85,5 @@ After that, every push to `main` will:
 - `analysis/`: offline AI-generated video understanding artifacts
 - `annotation-exports/`: export-like timeline annotations before normalization
 - `tools/`: browser tools for authoring gameplay points and timeline segments
+- `gameplay-points/`: normalized point/segment payloads that directly drive games
 - `scripts/download_videos.sh`: reproducible asset download script

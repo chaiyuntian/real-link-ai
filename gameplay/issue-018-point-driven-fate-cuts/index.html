@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 18 | Point-Driven Fate Cuts</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#eff8ff; background:linear-gradient(180deg,#08111d,#03070c 62%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.05); border:1px solid rgba(145,211,255,.15); }
+      video { width:100%; display:block; border-radius:16px; background:#000; }
+      .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+      button { cursor:pointer; border:0; border-radius:14px; padding:12px 14px; background:#9adfff; color:#071320; font-weight:700; text-align:left; width:100%; margin-top:10px; }
+      .copy { color:#b8d2e2; line-height:1.55; min-height:72px; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9adfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+          <div class="stats">
+            <div>Clarity<br /><strong id="clarity">0</strong></div>
+            <div>Urgency<br /><strong id="urgency">0</strong></div>
+            <div>Myth<br /><strong id="myth">0</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h1>Point-Driven Fate Cuts</h1>
+          <p class="copy" id="copy">This game is generated from a point-and-segment payload authored as timeline data.</p>
+          <p id="prompt">Load point graph.</p>
+          <div id="choices"></div>
+          <p id="ending"></p>
+          <button id="start">Start Point-Driven Run</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const video = document.getElementById("video");
+      const copyEl = document.getElementById("copy");
+      const promptEl = document.getElementById("prompt");
+      const choicesEl = document.getElementById("choices");
+      const endingEl = document.getElementById("ending");
+      const clarityEl = document.getElementById("clarity");
+      const urgencyEl = document.getElementById("urgency");
+      const mythEl = document.getElementById("myth");
+
+      const state = { clarity: 0, urgency: 0, myth: 0 };
+      let payload = null;
+      let pointIndex = 0;
+      let live = false;
+      let awaiting = false;
+
+      function syncState() {
+        clarityEl.textContent = state.clarity;
+        urgencyEl.textContent = state.urgency;
+        mythEl.textContent = state.myth;
+      }
+
+      function applySegmentEffects(label) {
+        if (label === "danger") state.urgency += 1;
+        if (label === "payoff") state.myth += 1;
+        syncState();
+      }
+
+      function renderChoices(item) {
+        choicesEl.innerHTML = "";
+        const options =
+          item.label === "decision"
+            ? [
+                { label: "Hold on vulnerability", effect: () => { state.clarity += 2; state.urgency -= 1; } },
+                { label: "Push toward danger", effect: () => { state.urgency += 2; } }
+              ]
+            : [
+                { label: "Read as personal myth", effect: () => { state.myth += 2; state.clarity += 1; } },
+                { label: "Read as tactical conflict", effect: () => { state.urgency += 1; state.myth -= 1; } }
+              ];
+
+        options.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option.label;
+          button.onclick = () => {
+            if (!awaiting) return;
+            awaiting = false;
+            option.effect();
+            syncState();
+            promptEl.textContent = `Committed: ${option.label}`;
+            choicesEl.innerHTML = "";
+            video.play();
+          };
+          choicesEl.appendChild(button);
+        });
+      }
+
+      function ending() {
+        if (state.clarity >= 3 && state.urgency >= 2) return "Ending: the cut lands as a coherent hunt under pressure.";
+        if (state.myth >= 3) return "Ending: the cut becomes symbolic and emotionally oversized.";
+        return "Ending: the trailer fractures into unstable motive and unresolved threat.";
+      }
+
+      async function init() {
+        const response = await fetch("../../gameplay-points/sintel-fate-cuts.json");
+        payload = await response.json();
+        copyEl.textContent = `Loaded ${payload.items.length} authored gameplay items. Points ask for decisions; segments shape state passively.`;
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!payload) await init();
+        state.clarity = 0; state.urgency = 0; state.myth = 0;
+        syncState();
+        pointIndex = 0;
+        live = true;
+        awaiting = false;
+        promptEl.textContent = "Run live.";
+        endingEl.textContent = "";
+        choicesEl.innerHTML = "";
+        video.currentTime = 0;
+        await video.play().catch(() => promptEl.textContent = "Playback blocked. Click start again.");
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || !payload || pointIndex >= payload.items.length) return;
+        const item = payload.items[pointIndex];
+
+        if (item.type === "point" && !awaiting && video.currentTime >= item.time) {
+          awaiting = true;
+          video.pause();
+          promptEl.textContent = item.prompt;
+          renderChoices(item);
+          pointIndex += 1;
+          return;
+        }
+
+        if (item.type === "segment" && video.currentTime >= item.start && video.currentTime <= item.end) {
+          promptEl.textContent = item.prompt;
+          applySegmentEffects(item.label);
+          pointIndex += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        endingEl.textContent = ending();
+      });
+
+      init();
+    </script>
+  </body>
+  </html>

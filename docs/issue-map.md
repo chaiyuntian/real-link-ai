@@ -18,5 +18,6 @@ The first wave maps GitHub issues to playable folders like this:
 - Issue #14 `Annotated Timeline Director` -> `gameplay/issue-014-annotated-timeline-director/`
 - Issue #16 `AI Plot Forensics` -> `gameplay/issue-016-ai-plot-forensics/`
 - Issue #17 `Gameplay Point Studio` -> `tools/gameplay-point-studio/`
+- Issue #18 `Point-Driven Fate Cuts` -> `gameplay/issue-018-point-driven-fate-cuts/`
 
 All prototypes are standalone and can be launched from the repo root index page.
