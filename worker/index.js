@@ -25,10 +25,16 @@ async function serveAsset(request, env) {
 
   const url = new URL(request.url);
   if (!url.pathname.includes(".")) {
-    const fallback = new URL("/index.html", url);
-    response = await env.ASSETS.fetch(new Request(fallback.toString(), request));
-    if (response.status !== 404) {
-      return withHeaders(response, HTML_HEADERS);
+    const candidates = [
+      new URL(`${url.pathname.replace(/\/?$/, "/")}index.html`, url),
+      new URL("/index.html", url)
+    ];
+
+    for (const fallback of candidates) {
+      response = await env.ASSETS.fetch(new Request(fallback.toString(), request));
+      if (response.status !== 404) {
+        return withHeaders(response, HTML_HEADERS);
+      }
     }
   }
 
