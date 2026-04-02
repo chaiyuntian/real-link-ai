@@ -1,0 +1,36 @@
+{
+  "title": "Sintel Causality",
+  "video": "sintel-trailer.mp4",
+  "beats": [
+    {
+      "time": 2.5,
+      "question": "A solemn reveal appears. What most likely caused this mood?",
+      "answers": [
+        { "label": "A vow or mission has just hardened", "correct": true },
+        { "label": "The hero found a comedy prop", "correct": false },
+        { "label": "Nothing happened; the tone is random", "correct": false }
+      ],
+      "explanation": "The beat reads like commitment and setup, not randomness."
+    },
+    {
+      "time": 5.5,
+      "question": "The pace tightens. What is the most plausible cause?",
+      "answers": [
+        { "label": "An immediate threat or pursuit has emerged", "correct": true },
+        { "label": "The film switched to a cooking sequence", "correct": false },
+        { "label": "The trailer ran out of frames", "correct": false }
+      ],
+      "explanation": "Escalation in movement and framing implies pursuit or danger."
+    },
+    {
+      "time": 8.6,
+      "question": "The final surge lands. What narrative logic best fits it?",
+      "answers": [
+        { "label": "The protagonist is pushing toward confrontation", "correct": true },
+        { "label": "The story forgot its own stakes", "correct": false },
+        { "label": "This is a detached montage with no plot", "correct": false }
+      ],
+      "explanation": "The cut energy suggests payoff and confrontation."
+    }
+  ]
+}

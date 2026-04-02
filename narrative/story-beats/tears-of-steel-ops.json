@@ -1,0 +1,33 @@
+{
+  "title": "Tears of Steel Ops",
+  "video": "tears-of-steel-teaser.mp4",
+  "beats": [
+    {
+      "time": 2.2,
+      "summary": "Urban unease hardens into incoming threat.",
+      "prompt": "Do you prioritize civilian context or anomaly detection?",
+      "choices": [
+        { "label": "Civilian context", "effects": { "trust": 2, "danger": 1, "intel": 0 } },
+        { "label": "Anomaly detection", "effects": { "trust": -1, "danger": -1, "intel": 2 } }
+      ]
+    },
+    {
+      "time": 5.0,
+      "summary": "Personal stakes and tactical uncertainty collide.",
+      "prompt": "Do you commit to protection or aggressive interception?",
+      "choices": [
+        { "label": "Protect", "effects": { "trust": 2, "danger": 1, "intel": -1 } },
+        { "label": "Intercept", "effects": { "trust": -1, "danger": -2, "intel": 2 } }
+      ]
+    },
+    {
+      "time": 8.1,
+      "summary": "The encounter becomes openly hostile.",
+      "prompt": "Do you preserve evidence or force resolution now?",
+      "choices": [
+        { "label": "Preserve evidence", "effects": { "trust": 1, "danger": 1, "intel": 2 } },
+        { "label": "Force resolution", "effects": { "trust": -1, "danger": -2, "intel": 0 } }
+      ]
+    }
+  ]
+}

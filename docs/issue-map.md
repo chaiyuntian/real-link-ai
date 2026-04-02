@@ -12,5 +12,8 @@ The first wave maps GitHub issues to playable folders like this:
 - Issue #8 `Threat Tagger` -> `gameplay/issue-008-threat-tagger/`
 - Issue #9 `Boss Scrubber` -> `gameplay/issue-009-boss-scrubber/`
 - Issue #10 `Emotion Switchboard` -> `gameplay/issue-010-emotion-switchboard/`
+- Issue #11 `Narrative Grounding Ops` -> `gameplay/issue-011-narrative-grounding-ops/`
+- Issue #12 `Reverse Causality Tribunal` -> `gameplay/issue-012-reverse-causality-tribunal/`
+- Issue #13 `Tempo Fate Engine` -> `gameplay/issue-013-tempo-fate-engine/`
 
 All five prototypes are standalone and can be launched from the repo root index page.

@@ -63,11 +63,16 @@ After that, every push to `main` will:
 - Issue 8: `Threat Tagger`
 - Issue 9: `Boss Scrubber`
 - Issue 10: `Emotion Switchboard`
+- Issue 11: `Narrative Grounding Ops`
+- Issue 12: `Reverse Causality Tribunal`
+- Issue 13: `Tempo Fate Engine`
 
 ## Repo structure
 
 - `docs/brainstorm-log.md`: full ideation trail and selection logic
 - `docs/video-sources.md`: source URLs and local file mapping
 - `docs/issue-map.md`: issue to prototype mapping
+- `docs/interactive-story-datasets.md`: narrative dataset research and integration notes
 - `gameplay/`: standalone gameplay folders
+- `narrative/story-beats/`: time-aligned story state data used by narrative-heavy prototypes
 - `scripts/download_videos.sh`: reproducible asset download script

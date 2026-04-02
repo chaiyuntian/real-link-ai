@@ -1,0 +1,15 @@
+{
+  "title": "Sintel Tempo Fate",
+  "video": "sintel-trailer.mp4",
+  "beats": [
+    { "until": 3.4, "target": 0.75, "label": "Hold grief and distance" },
+    { "until": 6.6, "target": 1.15, "label": "Push pursuit and urgency" },
+    { "until": 9.5, "target": 1.35, "label": "Force confrontation" },
+    { "until": 12.0, "target": 0.85, "label": "Recover into aftermath" }
+  ],
+  "endings": {
+    "resolve": "You shaped the trailer into a determined hunt with emotional control.",
+    "dread": "You held too much weight in the slow beats, and the story curdled into dread.",
+    "collapse": "Your tempo drift shattered continuity and the plot collapsed into panic."
+  }
+}

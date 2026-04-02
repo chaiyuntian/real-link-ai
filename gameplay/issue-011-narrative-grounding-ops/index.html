@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 11 | Narrative Grounding Ops</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#eef9ff; background:linear-gradient(180deg,#091422,#04070d 62%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.05); border:1px solid rgba(149,215,255,.18); }
+      video { width:100%; border-radius:16px; display:block; background:#000; }
+      .state { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+      .choice { cursor:pointer; border:0; border-radius:14px; padding:12px 14px; background:#9adfff; color:#091420; font-weight:700; text-align:left; margin-top:10px; width:100%; }
+      .summary { color:#b3d2e0; line-height:1.55; min-height:76px; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9adfff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/tears-of-steel-teaser.mp4" preload="auto"></video>
+          <div class="state">
+            <div>Trust<br /><strong id="trust">0</strong></div>
+            <div>Danger<br /><strong id="danger">0</strong></div>
+            <div>Intel<br /><strong id="intel">0</strong></div>
+          </div>
+        </section>
+        <aside class="panel">
+          <h1>Narrative Grounding Ops</h1>
+          <p class="summary" id="summary">Loading beat graph.</p>
+          <p id="prompt">Stand by.</p>
+          <div id="choices"></div>
+          <p id="ending"></p>
+          <button class="choice" id="start">Start Ops Session</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const state = { trust: 0, danger: 0, intel: 0 };
+      let graph = null, idx = 0, live = false, awaiting = false;
+      const video = document.getElementById("video");
+      const summaryEl = document.getElementById("summary");
+      const promptEl = document.getElementById("prompt");
+      const choicesEl = document.getElementById("choices");
+      const endingEl = document.getElementById("ending");
+      const trustEl = document.getElementById("trust");
+      const dangerEl = document.getElementById("danger");
+      const intelEl = document.getElementById("intel");
+
+      function syncState() {
+        trustEl.textContent = state.trust;
+        dangerEl.textContent = state.danger;
+        intelEl.textContent = state.intel;
+      }
+
+      function renderChoices(beat) {
+        choicesEl.innerHTML = "";
+        beat.choices.forEach((choice) => {
+          const b = document.createElement("button");
+          b.className = "choice";
+          b.textContent = choice.label;
+          b.onclick = () => {
+            if (!awaiting) return;
+            awaiting = false;
+            Object.entries(choice.effects).forEach(([k, v]) => { state[k] += v; });
+            syncState();
+            promptEl.textContent = `Decision logged: ${choice.label}`;
+            choicesEl.innerHTML = "";
+            video.play();
+          };
+          choicesEl.appendChild(b);
+        });
+      }
+
+      function finalEnding() {
+        if (state.trust >= 2 && state.intel >= 2) return "Ending: you preserved context and built a credible case.";
+        if (state.danger <= -3 && state.trust < 0) return "Ending: you contained the threat, but the operation reads as ruthless.";
+        return "Ending: the mission stays unresolved, balanced between caution and uncertainty.";
+      }
+
+      async function init() {
+        const res = await fetch("../../narrative/story-beats/tears-of-steel-ops.json");
+        graph = await res.json();
+        summaryEl.textContent = "Time-aligned beat graph loaded. Each pause is a plot node, not just a timing gate.";
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!graph) await init();
+        idx = 0; live = true; awaiting = false;
+        state.trust = 0; state.danger = 0; state.intel = 0; syncState();
+        promptEl.textContent = "Ops live.";
+        endingEl.textContent = "";
+        choicesEl.innerHTML = "";
+        video.currentTime = 0;
+        await video.play().catch(() => promptEl.textContent = "Click start again.");
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || awaiting || !graph || idx >= graph.beats.length) return;
+        const beat = graph.beats[idx];
+        if (video.currentTime >= beat.time) {
+          awaiting = true;
+          video.pause();
+          summaryEl.textContent = beat.summary;
+          promptEl.textContent = beat.prompt;
+          renderChoices(beat);
+          idx += 1;
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        endingEl.textContent = finalEnding();
+      });
+
+      init();
+    </script>
+  </body>
+  </html>

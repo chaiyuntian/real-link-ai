@@ -157,3 +157,19 @@ To keep the process open-ended, I added a deliberate expansion pass around opera
 - Compression combat: intentionally degrade, stutter, or freeze footage to gain control.
 - Director sabotage: the player wins by making the edit intentionally worse in the most effective way.
 - Memory test: replay one micro-moment across multiple timings and ask the player what actually changed.
+
+## Narrative integration shift
+
+This phase changes the design rule:
+
+- before: gameplay mostly reads the video as timing material
+- now: gameplay reads the video as plot evidence
+
+That means each mechanic should connect to at least one of:
+
+- beat-aligned story annotation
+- plot-cause inference
+- stateful consequence tracking
+- ending generation tied to interpretation
+
+This is the point where the repo starts borrowing structure from interactive-fiction datasets and narrative video grounding work, instead of only remixing footage mechanically.

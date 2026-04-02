@@ -16,7 +16,16 @@ const filesToCopy = [
   "gameplay/issue-007-meme-sniper/index.html",
   "gameplay/issue-008-threat-tagger/index.html",
   "gameplay/issue-009-boss-scrubber/index.html",
-  "gameplay/issue-010-emotion-switchboard/index.html"
+  "gameplay/issue-010-emotion-switchboard/index.html",
+  "gameplay/issue-011-narrative-grounding-ops/index.html",
+  "gameplay/issue-012-reverse-causality-tribunal/index.html",
+  "gameplay/issue-013-tempo-fate-engine/index.html"
+];
+
+const dataFilesToCopy = [
+  "narrative/story-beats/tears-of-steel-ops.json",
+  "narrative/story-beats/sintel-causality.json",
+  "narrative/story-beats/sintel-tempo-fate.json"
 ];
 
 async function ensureCleanDist() {
@@ -41,7 +50,8 @@ async function writeManifest() {
   const manifest = {
     generatedAt: new Date().toISOString(),
     videoBaseUrl,
-    files: filesToCopy
+    files: filesToCopy,
+    dataFiles: dataFilesToCopy
   };
   await fs.writeFile(
     path.join(distDir, "deploy-manifest.json"),
@@ -50,8 +60,16 @@ async function writeManifest() {
   );
 }
 
+async function copyStaticFile(relativePath) {
+  const sourcePath = path.join(root, relativePath);
+  const targetPath = path.join(distDir, relativePath);
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.copyFile(sourcePath, targetPath);
+}
+
 await ensureCleanDist();
 await Promise.all(filesToCopy.map(copyHtml));
+await Promise.all(dataFilesToCopy.map(copyStaticFile));
 await writeManifest();
 
 console.log(`Built deployable site into ${distDir}`);

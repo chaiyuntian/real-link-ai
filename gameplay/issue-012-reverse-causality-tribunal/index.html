@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 12 | Reverse Causality Tribunal</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#fff7ef; background:linear-gradient(180deg,#1a1011,#060405 62%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); }
+      video { width:100%; border-radius:16px; display:block; background:#000; }
+      button { cursor:pointer; border:0; border-radius:14px; padding:12px 14px; background:#ffc796; color:#261207; font-weight:700; text-align:left; width:100%; margin-top:10px; }
+      .note { color:#ddc7ba; line-height:1.55; min-height:72px; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#ffc796">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+        </section>
+        <aside class="panel">
+          <h1>Reverse Causality Tribunal</h1>
+          <p class="note" id="note">The clip will jump into reversed evidence. Infer the cause before the forward reveal restores chronology.</p>
+          <p>Score: <strong id="score">0</strong></p>
+          <div id="answers"></div>
+          <button id="start">Start Tribunal</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      let graph = null, idx = 0, score = 0, live = false, awaiting = false, reverseMode = false, reverseTimer = null;
+      const video = document.getElementById("video");
+      const noteEl = document.getElementById("note");
+      const scoreEl = document.getElementById("score");
+      const answersEl = document.getElementById("answers");
+
+      async function init() {
+        const res = await fetch("../../narrative/story-beats/sintel-causality.json");
+        graph = await res.json();
+      }
+
+      function playReverseWindow(center) {
+        reverseMode = true;
+        let t = center + 0.5;
+        video.pause();
+        video.currentTime = t;
+        clearInterval(reverseTimer);
+        reverseTimer = setInterval(() => {
+          t -= 0.06;
+          if (t <= center - 0.5) {
+            clearInterval(reverseTimer);
+            reverseMode = false;
+            awaiting = true;
+            renderAnswers(graph.beats[idx]);
+            return;
+          }
+          video.currentTime = t;
+        }, 50);
+      }
+
+      function renderAnswers(beat) {
+        noteEl.textContent = beat.question;
+        answersEl.innerHTML = "";
+        beat.answers.forEach((answer) => {
+          const b = document.createElement("button");
+          b.textContent = answer.label;
+          b.onclick = () => {
+            if (!awaiting) return;
+            awaiting = false;
+            if (answer.correct) {
+              score += 180;
+              noteEl.textContent = `Correct. ${beat.explanation}`;
+            } else {
+              noteEl.textContent = `Incorrect. ${beat.explanation}`;
+            }
+            scoreEl.textContent = score;
+            answersEl.innerHTML = "";
+            idx += 1;
+            video.play();
+          };
+          answersEl.appendChild(b);
+        });
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!graph) await init();
+        idx = 0; score = 0; live = true; awaiting = false; reverseMode = false;
+        scoreEl.textContent = score;
+        noteEl.textContent = "Chronology unstable.";
+        answersEl.innerHTML = "";
+        video.currentTime = 0;
+        await video.play().catch(() => noteEl.textContent = "Click start again.");
+      };
+
+      video.addEventListener("timeupdate", () => {
+        if (!live || awaiting || reverseMode || !graph || idx >= graph.beats.length) return;
+        const beat = graph.beats[idx];
+        if (video.currentTime >= beat.time) {
+          playReverseWindow(beat.time);
+        }
+      });
+
+      video.addEventListener("ended", () => {
+        live = false;
+        noteEl.textContent = `Tribunal complete. Plot reasoning score ${score}.`;
+      });
+
+      init();
+    </script>
+  </body>
+  </html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue 13 | Tempo Fate Engine</title>
+    <style>
+      body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; color:#f2fbff; background:linear-gradient(180deg,#0b1124,#04070f 62%); }
+      main { width:min(1180px,calc(100% - 24px)); margin:0 auto; padding:20px 0 40px; }
+      .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+      .panel { padding:16px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(154,183,255,.18); }
+      video { width:100%; border-radius:16px; display:block; background:#000; }
+      button { cursor:pointer; border:0; border-radius:999px; padding:12px 16px; background:#9ab6ff; color:#081427; font-weight:700; }
+      .goal { min-height:60px; color:#bed1e9; line-height:1.5; }
+      @media (max-width:920px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="../../index.html" style="color:#9ab6ff">Back</a></p>
+      <div class="grid">
+        <section class="panel">
+          <video id="video" src="../../assets/videos/sintel-trailer.mp4" preload="auto"></video>
+        </section>
+        <aside class="panel">
+          <h1>Tempo Fate Engine</h1>
+          <p class="goal" id="goal">Load fate graph.</p>
+          <p>Playback speed: <strong id="speed">1.00</strong></p>
+          <p>Resolve: <strong id="resolve">0</strong> | Dread: <strong id="dread">0</strong> | Collapse: <strong id="collapse">0</strong></p>
+          <p id="ending"></p>
+          <p><strong>J</strong> slower, <strong>K</strong> faster.</p>
+          <button id="start">Start Fate Engine</button>
+        </aside>
+      </div>
+    </main>
+    <script>
+      let graph = null, live = false;
+      const score = { resolve: 0, dread: 0, collapse: 0 };
+      const video = document.getElementById("video");
+      const goalEl = document.getElementById("goal");
+      const speedEl = document.getElementById("speed");
+      const resolveEl = document.getElementById("resolve");
+      const dreadEl = document.getElementById("dread");
+      const collapseEl = document.getElementById("collapse");
+      const endingEl = document.getElementById("ending");
+
+      async function init() {
+        const res = await fetch("../../narrative/story-beats/sintel-tempo-fate.json");
+        graph = await res.json();
+        goalEl.textContent = "Tempo graph loaded. You are shaping interpretation, not only speed.";
+      }
+
+      function phaseForTime(t) {
+        return graph.beats.find((beat) => t <= beat.until) || graph.beats[graph.beats.length - 1];
+      }
+
+      function syncHud() {
+        speedEl.textContent = video.playbackRate.toFixed(2);
+        resolveEl.textContent = score.resolve;
+        dreadEl.textContent = score.dread;
+        collapseEl.textContent = score.collapse;
+      }
+
+      function finalEnding() {
+        if (score.resolve >= score.dread && score.resolve >= score.collapse) return graph.endings.resolve;
+        if (score.dread >= score.collapse) return graph.endings.dread;
+        return graph.endings.collapse;
+      }
+
+      document.getElementById("start").onclick = async () => {
+        if (!graph) await init();
+        score.resolve = 0; score.dread = 0; score.collapse = 0;
+        live = true;
+        video.currentTime = 0;
+        video.playbackRate = 1;
+        syncHud();
+        endingEl.textContent = "";
+        await video.play().catch(() => goalEl.textContent = "Click start again.");
+      };
+
+      document.addEventListener("keydown", (event) => {
+        if (!live) return;
+        if (event.key.toLowerCase() === "j") video.playbackRate = Math.max(0.5, video.playbackRate - 0.1);
+        if (event.key.toLowerCase() === "k") video.playbackRate = Math.min(1.8, video.playbackRate + 0.1);
+        syncHud();
+      });
+
+      setInterval(() => {
+        if (!live || !graph) return;
+        const phase = phaseForTime(video.currentTime);
+        goalEl.textContent = phase.label;
+        const delta = Math.abs(video.playbackRate - phase.target);
+        if (delta <= 0.15) {
+          score.resolve += 8;
+        } else if (video.playbackRate < phase.target) {
+          score.dread += 6;
+        } else {
+          score.collapse += 6;
+        }
+        syncHud();
+      }, 300);
+
+      video.addEventListener("ended", () => {
+        live = false;
+        endingEl.textContent = finalEnding();
+      });
+
+      init();
+    </script>
+  </body>
+  </html>
