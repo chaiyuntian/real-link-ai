@@ -19,5 +19,15 @@ The first wave maps GitHub issues to playable folders like this:
 - Issue #16 `AI Plot Forensics` -> `gameplay/issue-016-ai-plot-forensics/`
 - Issue #17 `Gameplay Point Studio` -> `tools/gameplay-point-studio/`
 - Issue #18 `Point-Driven Fate Cuts` -> `gameplay/issue-018-point-driven-fate-cuts/`
+- Issue #19 `Cutline Courier` -> planned
+- Issue #20 `Threat Weaver` -> planned
+- Issue #21 `Companion Echo` -> planned
+- Issue #22 `False Trailer` -> planned
+- Issue #23 `Momentum Trial` -> planned
+- Issue #24 `Microloop Alchemist` -> planned
+- Issue #25 `Scene Verdict` -> planned
+- Issue #26 `Pursuit Cartographer` -> planned
+- Issue #27 `Archive Diver` -> planned
+- Issue #28 `Myth Engine` -> planned
 
 All prototypes are standalone and can be launched from the repo root index page.

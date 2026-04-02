@@ -3,226 +3,289 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>real-link-ai | Video Gameplay Lab</title>
+    <title>real-link-ai | Short-Video Game Platform</title>
     <style>
       :root {
-        --bg: #07111f;
-        --panel: rgba(10, 22, 38, 0.88);
-        --line: rgba(130, 189, 255, 0.2);
-        --text: #eaf4ff;
-        --muted: #8eb3d9;
-        --accent: #78f0c8;
-        --accent-2: #ff8f6b;
+        --bg: #06111d;
+        --panel: rgba(8, 20, 34, 0.84);
+        --line: rgba(137, 205, 255, 0.16);
+        --text: #eff8ff;
+        --muted: #99b9d5;
+        --accent: #8dffd0;
+        --accent2: #ff9d76;
+        --accent3: #a8b6ff;
       }
-
-      * {
-        box-sizing: border-box;
-      }
-
+      * { box-sizing: border-box; }
       body {
         margin: 0;
-        min-height: 100vh;
-        font-family: "Avenir Next", "Segoe UI", sans-serif;
         color: var(--text);
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
         background:
-          radial-gradient(circle at top left, rgba(50, 110, 188, 0.3), transparent 34%),
-          radial-gradient(circle at top right, rgba(255, 143, 107, 0.24), transparent 30%),
-          linear-gradient(180deg, #06101b 0%, #09182c 60%, #060b14 100%);
+          radial-gradient(circle at top left, rgba(70, 120, 214, 0.26), transparent 30%),
+          radial-gradient(circle at top right, rgba(255, 157, 118, 0.24), transparent 28%),
+          radial-gradient(circle at center, rgba(141, 255, 208, 0.08), transparent 40%),
+          linear-gradient(180deg, #040b14 0%, #071423 62%, #05070d 100%);
       }
-
       main {
-        width: min(1120px, calc(100% - 32px));
+        width: min(1220px, calc(100% - 28px));
         margin: 0 auto;
-        padding: 48px 0 64px;
+        padding: 34px 0 70px;
       }
-
       .hero {
         display: grid;
         gap: 18px;
-        margin-bottom: 28px;
+        margin-bottom: 30px;
       }
-
       .eyebrow {
-        color: var(--accent);
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
         font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--accent);
       }
-
       h1 {
         margin: 0;
-        font-size: clamp(40px, 7vw, 72px);
-        line-height: 0.96;
-        max-width: 900px;
+        max-width: 980px;
+        font-size: clamp(42px, 7vw, 78px);
+        line-height: 0.94;
       }
-
       .sub {
-        max-width: 760px;
+        max-width: 800px;
         color: var(--muted);
         font-size: 18px;
+        line-height: 1.65;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.55fr 1fr;
+        gap: 18px;
+        margin-bottom: 30px;
+      }
+      .panel {
+        border-radius: 22px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .stat {
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.04);
+      }
+      .stat strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 28px;
+      }
+      .section {
+        margin-top: 28px;
+      }
+      .section h2 {
+        margin: 0 0 10px;
+        font-size: 30px;
+      }
+      .section p {
+        margin: 0 0 16px;
+        color: var(--muted);
         line-height: 1.6;
       }
-
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 16px;
       }
-
       .card {
         display: grid;
         gap: 10px;
         padding: 18px;
         border-radius: 18px;
         border: 1px solid var(--line);
-        background: var(--panel);
-        text-decoration: none;
+        background: rgba(255,255,255,0.04);
         color: inherit;
+        text-decoration: none;
         transition: transform 160ms ease, border-color 160ms ease;
       }
-
       .card:hover {
-        transform: translateY(-3px);
-        border-color: rgba(120, 240, 200, 0.45);
+        transform: translateY(-4px);
+        border-color: rgba(141,255,208,0.42);
       }
-
       .card small {
-        color: var(--accent-2);
+        color: var(--accent2);
         text-transform: uppercase;
         letter-spacing: 0.14em;
       }
-
       .card strong {
         font-size: 24px;
       }
-
       .card p {
         margin: 0;
         color: var(--muted);
-        line-height: 1.5;
+        line-height: 1.55;
       }
-
-      .meta {
+      .pill-row {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        margin-top: 22px;
       }
-
       .pill {
         padding: 10px 14px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255,255,255,0.05);
         color: var(--muted);
         font-size: 14px;
+      }
+      .columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      @media (max-width: 920px) {
+        .hero-grid, .columns {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
     <main>
       <section class="hero">
-        <div class="eyebrow">real-link-ai / gameplay lab</div>
-        <h1>One small video set, many playable ideas.</h1>
+        <div class="eyebrow">real-link-ai / short-video game platform</div>
+        <h1>Turn one short video into many different playable worlds.</h1>
         <p class="sub">
-          This repo turns three public clips into multiple browser-playable game loops:
-          rhythm, freeze timing, command decisions, glitch control, and speed-state
-          challenge.
+          This platform treats short videos as raw game material. The same clip can become a rhythm game, a branching narrative, a surveillance puzzle, a meme engine, a causality test, or a point-driven story machine.
         </p>
       </section>
 
-      <section class="grid">
-        <a class="card" href="./gameplay/issue-001-rhythm-cut/">
-          <small>Issue 1</small>
-          <strong>Rhythm Cut</strong>
-          <p>Hit visual impact beats in the Big Buck Bunny trailer.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-002-freeze-frame-hunter/">
-          <small>Issue 2</small>
-          <strong>Freeze Frame Hunter</strong>
-          <p>Stop the Sintel trailer inside narrow target windows.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-003-director-split/">
-          <small>Issue 3</small>
-          <strong>Director Split</strong>
-          <p>Make live command decisions over the Tears of Steel teaser.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-004-glitch-chase/">
-          <small>Issue 4</small>
-          <strong>Glitch Chase</strong>
-          <p>Ride chaos zones with timed pauses, boosts, and recoveries.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-005-remix-runner/">
-          <small>Issue 5</small>
-          <strong>Remix Runner</strong>
-          <p>Match section speed targets while Sintel keeps moving.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-006-subtitle-saboteur/">
-          <small>Issue 6</small>
-          <strong>Subtitle Saboteur</strong>
-          <p>Choose the funniest wrong caption at the exact wrong moment.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-007-meme-sniper/">
-          <small>Issue 7</small>
-          <strong>Meme Sniper</strong>
-          <p>Lock tiny loop pockets to weaponize one clip into repetition.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-008-threat-tagger/">
-          <small>Issue 8</small>
-          <strong>Threat Tagger</strong>
-          <p>Tag danger windows like a live surveillance operator.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-009-boss-scrubber/">
-          <small>Issue 9</small>
-          <strong>Boss Scrubber</strong>
-          <p>Drag through a hostile timeline without touching forbidden slices.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-010-emotion-switchboard/">
-          <small>Issue 10</small>
-          <strong>Emotion Switchboard</strong>
-          <p>Read mood shifts fast enough to keep up with the trailer.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-011-narrative-grounding-ops/">
-          <small>Issue 11</small>
-          <strong>Narrative Grounding Ops</strong>
-          <p>Drive story state through time-aligned plot decisions.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-012-reverse-causality-tribunal/">
-          <small>Issue 12</small>
-          <strong>Reverse Causality Tribunal</strong>
-          <p>Infer why events happened from reversed footage and plot reveal.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-013-tempo-fate-engine/">
-          <small>Issue 13</small>
-          <strong>Tempo Fate Engine</strong>
-          <p>Force the same story into dread, resolve, or collapse through tempo.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-014-annotated-timeline-director/">
-          <small>Issue 14</small>
-          <strong>Annotated Timeline Director</strong>
-          <p>Turn timeline labels directly into plot states, choices, and endings.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-016-ai-plot-forensics/">
-          <small>Issue 16</small>
-          <strong>AI Plot Forensics</strong>
-          <p>Offline AI understanding becomes a fixed forensic brief for gameplay.</p>
-        </a>
-        <a class="card" href="./tools/gameplay-point-studio/">
-          <small>Issue 17</small>
-          <strong>Gameplay Point Studio</strong>
-          <p>Insert gameplay points into video, export JSON, and feed the gameplay pipeline.</p>
-        </a>
-        <a class="card" href="./gameplay/issue-018-point-driven-fate-cuts/">
-          <small>Issue 18</small>
-          <strong>Point-Driven Fate Cuts</strong>
-          <p>Playable narrative built directly from authored gameplay points and segments.</p>
-        </a>
+      <section class="hero-grid">
+        <div class="panel">
+          <div class="pill-row">
+            <span class="pill">Play published games</span>
+            <span class="pill">Analyze videos offline</span>
+            <span class="pill">Insert gameplay points</span>
+            <span class="pill">Remix one clip into many genres</span>
+          </div>
+          <div class="section">
+            <h2>Platform Loop</h2>
+            <p>Discover a short video, understand it through timeline labels or offline AI, insert gameplay points, generate multiple playable interpretations, and publish the result to one shared platform.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="stats">
+            <div class="stat">Playable Games<strong>16</strong></div>
+            <div class="stat">Authoring Tools<strong>1</strong></div>
+            <div class="stat">Open Idea Issues<strong>10+</strong></div>
+          </div>
+          <div class="section">
+            <h2>Current Focus</h2>
+            <p>Short-form cinematic clips, reusable narrative beats, timeline-driven mechanics, and fast publishing to `ideas-batch1.real-link.ai`.</p>
+          </div>
+        </div>
       </section>
 
-      <div class="meta">
-        <span class="pill">Run `bash scripts/download_videos.sh` first</span>
-        <span class="pill">Serve repo root with `python3 -m http.server 8000`</span>
-        <span class="pill">See `docs/brainstorm-log.md` for the ideation trail</span>
-      </div>
+      <section class="section">
+        <h2>Play</h2>
+        <p>Published games already running on the platform.</p>
+        <div class="grid">
+          <a class="card" href="./gameplay/issue-011-narrative-grounding-ops/">
+            <small>Narrative</small>
+            <strong>Narrative Grounding Ops</strong>
+            <p>Drive story state through time-aligned plot decisions.</p>
+          </a>
+          <a class="card" href="./gameplay/issue-014-annotated-timeline-director/">
+            <small>Timeline</small>
+            <strong>Annotated Timeline Director</strong>
+            <p>Turn timeline labels directly into plot states, choices, and endings.</p>
+          </a>
+          <a class="card" href="./gameplay/issue-016-ai-plot-forensics/">
+            <small>AI Offline</small>
+            <strong>AI Plot Forensics</strong>
+            <p>Gameplay driven by a saved video-understanding artifact.</p>
+          </a>
+          <a class="card" href="./gameplay/issue-018-point-driven-fate-cuts/">
+            <small>Point-Driven</small>
+            <strong>Point-Driven Fate Cuts</strong>
+            <p>Playable narrative built directly from authored points and segments.</p>
+          </a>
+          <a class="card" href="./gameplay/issue-001-rhythm-cut/">
+            <small>Rhythm</small>
+            <strong>Rhythm Cut</strong>
+            <p>Hit visual impact beats in the Big Buck Bunny trailer.</p>
+          </a>
+          <a class="card" href="./gameplay/issue-007-meme-sniper/">
+            <small>Meme</small>
+            <strong>Meme Sniper</strong>
+            <p>Lock micro-loop pockets to weaponize repetition.</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Create</h2>
+        <p>Use tools and payloads to insert gameplay into videos and generate new games.</p>
+        <div class="grid">
+          <a class="card" href="./tools/gameplay-point-studio/">
+            <small>Tool</small>
+            <strong>Gameplay Point Studio</strong>
+            <p>Insert points and segments into a video timeline, then export normalized JSON.</p>
+          </a>
+          <a class="card" href="./gameplay-points/sintel-fate-cuts.json">
+            <small>Data</small>
+            <strong>Point Payload Example</strong>
+            <p>See a real point-and-segment payload that directly drives a published game.</p>
+          </a>
+          <a class="card" href="./analysis/fal/sintel-trailer-understanding.json">
+            <small>Analysis</small>
+            <strong>Offline Video Understanding</strong>
+            <p>Saved fal analysis used in production without live AI during gameplay.</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Next 10 Games</h2>
+        <p>The next wave of short-video-native concepts queued for production.</p>
+        <div class="columns">
+          <div class="panel">
+            <ul>
+              <li>Issue #19 `Cutline Courier`</li>
+              <li>Issue #20 `Threat Weaver`</li>
+              <li>Issue #21 `Companion Echo`</li>
+              <li>Issue #22 `False Trailer`</li>
+              <li>Issue #23 `Momentum Trial`</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <ul>
+              <li>Issue #24 `Microloop Alchemist`</li>
+              <li>Issue #25 `Scene Verdict`</li>
+              <li>Issue #26 `Pursuit Cartographer`</li>
+              <li>Issue #27 `Archive Diver`</li>
+              <li>Issue #28 `Myth Engine`</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Platform Notes</h2>
+        <p>The platform is optimized for short-video gameplay production: open video sourcing, offline understanding, point insertion, many-genre remixing, and direct publishing.</p>
+        <div class="pill-row">
+          <span class="pill">Label Studio for semantic timeline labels</span>
+          <span class="pill">CVAT for tracked motion gameplay</span>
+          <span class="pill">fal or Gemini for production-time understanding</span>
+          <span class="pill">No AI required during runtime gameplay</span>
+        </div>
+      </section>
     </main>
   </body>
   </html>

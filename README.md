@@ -2,6 +2,8 @@
 
 Video-first gameplay experiments built from a small set of reusable public clips.
 
+The repo is evolving into a short-video gameplay platform: one clip, many game types, shared tooling, and a continuous publish loop.
+
 ## What this repo does
 
 - Downloads 3 public video clips locally for experimentation.
@@ -70,6 +72,16 @@ After that, every push to `main` will:
 - Issue 16: `AI Plot Forensics`
 - Issue 17: `Gameplay Point Studio`
 - Issue 18: `Point-Driven Fate Cuts`
+- Issue 19: `Cutline Courier`
+- Issue 20: `Threat Weaver`
+- Issue 21: `Companion Echo`
+- Issue 22: `False Trailer`
+- Issue 23: `Momentum Trial`
+- Issue 24: `Microloop Alchemist`
+- Issue 25: `Scene Verdict`
+- Issue 26: `Pursuit Cartographer`
+- Issue 27: `Archive Diver`
+- Issue 28: `Myth Engine`
 
 ## Repo structure
 
@@ -80,6 +92,7 @@ After that, every push to `main` will:
 - `docs/timeline-annotation-pipeline.md`: annotation-tool to gameplay pipeline
 - `docs/video-discovery-and-understanding.md`: sourcing and offline AI-understanding workflow
 - `docs/gameplay-point-tool-selection.md`: recommended tools for inserting gameplay points into video
+- `docs/short-video-platform.md`: platform direction and next-wave concept backlog
 - `gameplay/`: standalone gameplay folders
 - `narrative/story-beats/`: time-aligned story state data used by narrative-heavy prototypes
 - `analysis/`: offline AI-generated video understanding artifacts
